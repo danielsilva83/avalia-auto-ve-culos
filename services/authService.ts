@@ -48,11 +48,22 @@ export const authService = {
   login: async () => {
     if (!supabase) return mockAuth.login();
     
+    // Helper para determinar a URL correta de retorno
+    // Isso evita problemas onde window.location.origin pode ser diferente do esperado em alguns ambientes de deploy
+    const getRedirectUrl = () => {
+       const siteUrl = import.meta.env.VITE_SITE_URL;
+       if (siteUrl) return siteUrl;
+       return window.location.origin;
+    };
+
+    const redirectTo = getRedirectUrl();
+    console.log("Iniciando OAuth com redirect para:", redirectTo);
+
     // Inicia fluxo OAuth - O redirecionamento acontece aqui
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: redirectTo
       }
     });
     
