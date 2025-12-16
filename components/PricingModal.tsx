@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, Star, Zap, ArrowLeft, QrCode, Copy, RefreshCw, XCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Check, Star, Zap, ArrowLeft, QrCode, Copy, RefreshCw, XCircle, CheckCircle2 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
 import { authService } from '../services/authService';
 
@@ -15,7 +15,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutos para pagar (padrão MP)
   const [isActivating, setIsActivating] = useState(false);
   
-  // Dados do pagamento Real
+  // Dados do pagamento
   const [qrCodeImage, setQrCodeImage] = useState<string>('');
   const [copyPaste, setCopyPaste] = useState<string>('');
   const [paymentId, setPaymentId] = useState<string | null>(null);
@@ -42,7 +42,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
     return () => clearInterval(interval);
   }, [step]);
 
-  // Polling de Status (Verifica se pagou a cada 5 segundos)
+  // Polling de Status
   useEffect(() => {
     if (step === 'pix' && paymentId) {
       pollingInterval.current = setInterval(async () => {
@@ -60,7 +60,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
         } catch (e) {
           console.error("Erro no polling", e);
         }
-      }, 5000);
+      }, 5000); // Checa a cada 5s
     }
 
     return () => {
@@ -77,7 +77,14 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
 
       const data = await paymentService.createPixPayment(user.email);
       
-      setQrCodeImage(`data:image/png;base64,${data.qrCodeBase64}`);
+      // Se vier base64 do MP, usa. Se não (mock), usa imagem de placeholder.
+      if (data.qrCodeBase64) {
+        setQrCodeImage(`data:image/png;base64,${data.qrCodeBase64}`);
+      } else {
+        // Imagem genérica de QR Code para testes/mock
+        setQrCodeImage("https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg");
+      }
+
       setCopyPaste(data.copyPasteCode);
       setPaymentId(data.paymentId);
       setTimeLeft(600); // Reset timer
@@ -85,15 +92,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
 
     } catch (error) {
       console.error(error);
-      alert("Erro ao gerar Pix. Verifique se o Backend/Edge Function está configurado.");
+      alert("Erro ao gerar Pix. Tente novamente.");
       setStep('offer');
     }
   };
 
   const handleFinish = async () => {
     setIsActivating(true);
-    // Aqui assumimos que o Webhook do backend já atualizou o banco 'profiles' para is_pro = true
-    // Mas chamamos onUpgrade para forçar o refresh do estado local no App.tsx
     await onUpgrade();
   };
 
@@ -198,7 +203,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
                 </button>
               </div>
               <p className="text-center text-xs text-gray-400">
-                Processado seguramente pelo Mercado Pago.
+                Ambiente seguro. {paymentService.createPixPayment.name === 'mockPaymentService' ? '(Modo Teste)' : ''}
               </p>
             </div>
           )}
@@ -211,7 +216,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
             </div>
           )}
 
-          {/* STEP 3: PIX QR CODE (REAL) */}
+          {/* STEP 3: PIX QR CODE (REAL ou MOCK) */}
           {step === 'pix' && (
             <div className="flex flex-col items-center space-y-5 animate-fade-in">
               <div className="w-48 h-48 bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden">
@@ -246,7 +251,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
               <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-3 w-full">
                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mt-0.5 shrink-0"></div>
                  <p className="text-xs text-blue-800">
-                   Aguardando pagamento... Assim que você pagar no banco, essa tela atualizará automaticamente.
+                   Aguardando pagamento... {paymentId?.startsWith('mock') ? '(Aprovará em 8s)' : 'Assim que você pagar, essa tela atualizará.'}
                  </p>
               </div>
             </div>

@@ -164,9 +164,27 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
       },
     });
 
+    // Verificação Robusta de Resposta
+    if (!response || !response.candidates || response.candidates.length === 0) {
+      console.error("Gemini retornou resposta vazia (sem candidates).", response);
+      throw new Error("A IA não conseguiu processar sua solicitação. Tente novamente.");
+    }
+
+    const candidate = response.candidates[0];
+
+    // Verifica bloqueios de segurança
+    if (candidate.finishReason !== "STOP" && !response.text) {
+      console.error("Gemini bloqueado ou erro.", {
+         finishReason: candidate.finishReason,
+         safetyRatings: candidate.safetyRatings
+      });
+      throw new Error(`A análise foi interrompida pela IA. Motivo: ${candidate.finishReason}`);
+    }
+
     const text = response.text;
     if (!text) {
-      throw new Error("No response from Gemini");
+      console.error("Texto da resposta indefinido.", JSON.stringify(response, null, 2));
+      throw new Error("A IA retornou dados incompletos. Por favor, tente novamente.");
     }
 
     return parseResponse(text);
