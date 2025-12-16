@@ -34,7 +34,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
         </div>
         
         <h1 className="text-4xl text-center text-gray-900 mb-3 tracking-tight font-['Playfair_Display'] font-bold">
-          AvalIA <span className="text-slate-700">Auto</span>
+          AvalIA AI <span className="text-slate-700">Automóveis</span>
         </h1>
         <p className="text-center text-gray-500 text-lg leading-relaxed">
           A Inteligência Artificial para comprar e vender carros no preço certo.
