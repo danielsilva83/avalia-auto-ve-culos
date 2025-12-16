@@ -51,7 +51,7 @@ export const authService = {
     // Helper para determinar a URL correta de retorno
     // Isso evita problemas onde window.location.origin pode ser diferente do esperado em alguns ambientes de deploy
     const getRedirectUrl = () => {
-       const siteUrl = import.meta.env.VITE_SITE_URL;
+       const siteUrl = process.env.VITE_SITE_URL;
        if (siteUrl) return siteUrl;
        return window.location.origin;
     };
