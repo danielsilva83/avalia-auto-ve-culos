@@ -106,7 +106,7 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
   `;
 
   const systemInstruction = `
-    Você é o "AvalIA Auto", um Consultor Sênior de Mercado Automotivo e Mentor para revendedores de carros.
+    Você é o "AvalIA AI Automóveis", um Consultor Sênior de Mercado Automotivo e Mentor para revendedores de carros.
 
     OBJETIVO:
     Analisar dados de um veículo, estimar a precificação comparando FIPE x Mercado Real e fornecer argumentos irrefutáveis.

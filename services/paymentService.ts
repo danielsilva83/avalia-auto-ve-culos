@@ -14,7 +14,7 @@ const mockPaymentService = {
       paymentId: "mock_id_" + Date.now(),
       // Deixamos vazio aqui para o Frontend usar uma imagem placeholder
       qrCodeBase64: "", 
-      copyPasteCode: "00020101021226580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913Avalia Auto6008Brasilia62070503***6304ABCD",
+      copyPasteCode: "00020101021226580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913AvalIA AI Automóveis6008Brasilia62070503***6304ABCD",
       status: "pending"
     };
   },
@@ -45,7 +45,7 @@ export const paymentService = {
 
     try {
       const { data, error } = await supabase.functions.invoke('create-pix', {
-        body: { email, description: 'AvalIA Auto - Acesso PRO Vitalício' },
+        body: { email, description: 'AvalIA AI Automóveis - Acesso PRO Vitalício' },
       });
 
       if (error) {

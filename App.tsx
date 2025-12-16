@@ -153,7 +153,7 @@ const App: React.FC = () => {
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-900" onClick={resetApp} style={{cursor: 'pointer'}}>
             <Car className="w-6 h-6" />
-            <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA Auto</h1>
+            <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA AI Automóveis</h1>
           </div>
           
           {user && (
@@ -216,7 +216,7 @@ const App: React.FC = () => {
               <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
               <h3 className="text-lg font-medium text-gray-600">Consultando Tabela FIPE...</h3>
               <p className="text-sm text-gray-400 text-center max-w-xs">
-                O AvalIA Auto está comparando o veículo com ofertas no Webmotors, OLX e iCarros.
+                O AvalIA AI Automóveis está comparando o veículo com ofertas no Webmotors, OLX e iCarros.
               </p>
            </div>
         )}
