@@ -155,14 +155,14 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
           </div>
 
           <h2 className="text-2xl font-bold">
-            {step === 'offer' && 'Limite Atingido'}
+            {step === 'offer' && 'Assine plano PRO ilimitado'}
             {step === 'loading_pix' && 'Gerando Pix...'}
             {step === 'pix' && 'Pagamento via Pix'}
             {step === 'success' && 'Pagamento Confirmado!'}
             {step === 'error' && 'Pagamento Expirou'}
           </h2>
           <p className="text-white/80 text-sm mt-1">
-            {step === 'offer' && 'Você usou seus créditos gratuitos.'}
+            {step === 'offer' && 'Avaliações precisas e ilimitadas para fechar os melhores negócios.'}
             {step === 'loading_pix' && 'Conectando ao Mercado Pago...'}
             {step === 'pix' && `Expira em: ${formatTime(timeLeft)}`}
             {step === 'success' && 'Ativando sua conta PRO...'}
