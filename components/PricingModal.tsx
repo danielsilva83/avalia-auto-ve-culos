@@ -193,6 +193,9 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-green-600" /> Scripts de Negociação
                   </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-600" /> Assinatura via Pix, sem necessidade de cartão de credito
+                  </li>
                 </ul>
 
                 <button
