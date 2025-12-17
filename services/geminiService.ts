@@ -64,12 +64,8 @@ const parseResponse = (text: string): AnalysisResponse => {
 };
 
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key not found in environment variables.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Corrected: Always use the process.env.API_KEY directly in the constructor as per guidelines.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const transactionContext = data.transactionType === 'compra' ? 'COMPRA (Avaliação para pagar)' : 'VENDA (Preço para anunciar)';
   
@@ -154,8 +150,9 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
   `;
 
   try {
+    // Corrected: Use 'gemini-3-flash-preview' for basic text tasks with Search Grounding as per guidelines.
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", 
+      model: "gemini-3-flash-preview", 
       contents: prompt,
       config: {
         systemInstruction: systemInstruction,
@@ -181,13 +178,23 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
       throw new Error(`A análise foi interrompida pela IA. Motivo: ${candidate.finishReason}`);
     }
 
+    // Corrected: response.text is a property, not a method.
     const text = response.text;
     if (!text) {
       console.error("Texto da resposta indefinido.", JSON.stringify(response, null, 2));
       throw new Error("A IA retornou dados incompletos. Por favor, tente novamente.");
     }
 
-    return parseResponse(text);
+    // Corrected: Extract grounding URLs from groundingChunks to comply with "MUST ALWAYS" rule for Google Search tools.
+    const groundingUrls = candidate.groundingMetadata?.groundingChunks
+      ?.map((chunk: any) => ({
+        title: chunk.web?.title || chunk.web?.uri || "Fonte",
+        uri: chunk.web?.uri
+      }))
+      .filter((item: any) => item.uri);
+
+    const parsed = parseResponse(text);
+    return { ...parsed, groundingUrls };
   } catch (error) {
     console.error("Error calling Gemini:", error);
     throw error;

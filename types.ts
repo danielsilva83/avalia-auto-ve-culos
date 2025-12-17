@@ -31,6 +31,7 @@ export interface AnalysisResponse {
   salesScripts: string[]; // Section 2: Array of strings
   knowledgePill: string; // Section 3: Concept
   crmData: CrmData; // Section 4: JSON Data
+  groundingUrls?: { title: string; uri: string }[]; // Section 5: Sources from Search Grounding
 }
 
 export interface User {

@@ -1,12 +1,17 @@
-// supabase/functions/create-pix/index.ts
+// @ts-ignore: Deno types are not available in Node environment
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
+// @ts-ignore: Deno.env is not defined in the local TypeScript context but is available in the Deno runtime.
 const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
 
-serve(async (req) => {
-  // Configuração de CORS para o Frontend conseguir chamar
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' } })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
@@ -20,19 +25,27 @@ serve(async (req) => {
         'X-Idempotency-Key': crypto.randomUUID()
       },
       body: JSON.stringify({
-        transaction_amount: 47.90, // Valor fixo do seu App
-        description: description,
+        transaction_amount: 47.90,
+        description: description || 'AvalIA AI Automóveis - PRO',
         payment_method_id: 'pix',
-        payer: { email: email }
+        payer: {
+          email: email,
+          first_name: 'Cliente',
+          last_name: 'AvalIA'
+        }
       })
     })
 
     const data = await response.json()
+    
     return new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: response.status
     })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 400 })
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400 
+    })
   }
 })

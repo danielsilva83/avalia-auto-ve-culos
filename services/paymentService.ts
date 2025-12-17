@@ -1,18 +1,15 @@
+
 import { supabase } from "./supabaseClient";
 import { PixPaymentResponse } from "../types";
 
-// --- MOCK SERVICE (Para testes sem Backend) ---
 const mockPaymentService = {
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    console.log("Creating MOCK Pix payment for", email);
-    await new Promise(r => setTimeout(r, 1500)); // Simula delay de rede
-    
-    // Marca o tempo de início para simular a aprovação depois
+    console.log("Modo Mock: Criando pagamento para", email);
+    await new Promise(r => setTimeout(r, 1500));
     localStorage.setItem('mock_payment_start', Date.now().toString());
 
     return {
-      paymentId: "mock_id_" + Date.now(),
-      // Deixamos vazio aqui para o Frontend usar uma imagem placeholder
+      paymentId: "mock_" + Date.now(),
       qrCodeBase64: "", 
       copyPasteCode: "00020101021226580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913AvalIA AI Automóveis6008Brasilia62070503***6304ABCD",
       status: "pending"
@@ -22,68 +19,58 @@ const mockPaymentService = {
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
     const startStr = localStorage.getItem('mock_payment_start');
     if (!startStr) return 'pending';
-    
     const elapsed = Date.now() - parseInt(startStr);
-    // Aprova automaticamente após 8 segundos
-    if (elapsed > 8000) {
-        return 'approved';
-    }
-    return 'pending';
+    return elapsed > 8000 ? 'approved' : 'pending';
   }
 };
 
 export const paymentService = {
-  /**
-   * Chama a Edge Function 'create-pix' para gerar um pagamento real no Mercado Pago
-   * Se o Supabase não estiver configurado, usa o Mock.
-   */
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
     if (!supabase) {
-      console.warn("Supabase não detectado. Usando serviço de pagamento MOCK.");
       return mockPaymentService.createPixPayment(email);
     }
 
     try {
       const { data, error } = await supabase.functions.invoke('create-pix', {
-        body: { email, description: 'AvalIA AI Automóveis - Acesso PRO Vitalício' },
+        body: { email, description: 'AvalIA AI - Acesso PRO Vitalício' },
       });
 
-      if (error) {
-        console.error("Erro na Edge Function (create-pix):", error);
-        throw error;
-      }
+      if (error) throw error;
 
+      // O Mercado Pago retorna a estrutura dentro de point_of_interaction
       return {
-        paymentId: data.id,
+        paymentId: data.id.toString(),
         qrCodeBase64: data.point_of_interaction.transaction_data.qr_code_base64,
         copyPasteCode: data.point_of_interaction.transaction_data.qr_code,
         status: data.status,
         ticketUrl: data.point_of_interaction.transaction_data.ticket_url
       };
-    } catch (e) {
-      console.error("Falha ao criar Pix real. Caindo para Mock (apenas dev) ou lançando erro.", e);
-      // Descomente a linha abaixo se quiser forçar o Mock em caso de erro no backend durante dev
-      // return mockPaymentService.createPixPayment(email);
-      throw new Error("Não foi possível gerar o pagamento. Tente novamente mais tarde.");
+    } catch (e: any) {
+      console.error("Erro ao gerar Pix real:", e);
+      // Se for ambiente de desenvolvimento (localhost), podemos cair para o mock
+      if (window.location.hostname === 'localhost') {
+        return mockPaymentService.createPixPayment(email);
+      }
+      throw new Error("Serviço de pagamento temporariamente indisponível.");
     }
   },
 
-  /**
-   * Verifica o status do pagamento.
-   */
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
     if (!supabase || paymentId.startsWith('mock_')) {
       return mockPaymentService.checkPaymentStatus(paymentId);
     }
 
-    const { data, error } = await supabase.functions.invoke('check-payment-status', {
-      body: { paymentId },
-    });
+    try {
+      // Nota: Esta função 'check-payment-status' também deve ser criada no Supabase
+      // ou você pode consultar a tabela 'profiles' para ver se is_pro mudou via webhook
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
+        body: { paymentId },
+      });
 
-    if (error) {
+      if (error) return 'pending';
+      return data.status;
+    } catch (e) {
       return 'pending';
     }
-
-    return data.status; // 'approved', 'pending', 'rejected'
   }
 };
