@@ -1,9 +1,9 @@
+
 import { User } from "../types";
 import { supabase } from "./supabaseClient";
 
 const MOCK_STORAGE_KEY = 'avalia_auto_user_mock';
 
-// --- MOCK LOGIC (Fallback se não houver Supabase configurado) ---
 const mockAuth = {
   login: async (): Promise<User> => {
     await new Promise(r => setTimeout(r, 1000));
@@ -43,13 +43,10 @@ const mockAuth = {
   }
 };
 
-// --- REAL BACKEND LOGIC (Supabase) ---
 export const authService = {
   login: async () => {
     if (!supabase) return mockAuth.login();
     
-    // Helper para determinar a URL correta de retorno
-    // Isso evita problemas onde window.location.origin pode ser diferente do esperado em alguns ambientes de deploy
     const getRedirectUrl = () => {
        const siteUrl = process.env.VITE_SITE_URL;
        if (siteUrl) return siteUrl;
@@ -57,9 +54,6 @@ export const authService = {
     };
 
     const redirectTo = getRedirectUrl();
-    console.log("Iniciando OAuth com redirect para:", redirectTo);
-
-    // Inicia fluxo OAuth - O redirecionamento acontece aqui
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -67,60 +61,56 @@ export const authService = {
       }
     });
     
-    if (error) {
-      // Tratamento específico para provedor desativado
-      if (error.message.includes("provider is not enabled")) {
-         throw new Error("O login com Google não está ativado no painel do Supabase. Ative em Auth > Providers.");
-      }
-      throw error;
-    }
-    // Retorna undefined pois a página vai recarregar
+    if (error) throw error;
   },
 
   logout: async () => {
-    // Limpa chave de mock por segurança
     localStorage.removeItem(MOCK_STORAGE_KEY);
-    
     if (!supabase) return mockAuth.logout();
-    
-    // Limpa sessão do Supabase
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error("Erro ao fazer logout:", error);
+    await supabase.auth.signOut();
   },
 
   getCurrentUser: async (): Promise<User | null> => {
     if (!supabase) return mockAuth.getCurrentUser();
 
-    // 1. Pega usuário da sessão
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return null;
+    try {
+      // 1. Pega usuário da sessão de forma rápida
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) return null;
 
-    // 2. Busca dados atualizados da tabela 'profiles' (créditos, plano)
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
+      // 2. Busca perfil na tabela 'profiles'
+      // Adicionado timeout ou verificação simples para evitar travamento
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle(); // maybeSingle não lança erro se não encontrar
 
-    if (error || !profile) {
-      // Se não achou perfil mas tem sessão, pode ser delay do trigger ou erro.
-      // Retorna dados básicos da sessão
+      // Se houver erro de perfil ou o perfil não existir ainda,
+      // retornamos o usuário básico da sessão Google para não travar o App
+      if (profileError || !profile) {
+        console.warn("Perfil não encontrado ou erro. Usando dados da sessão.");
+        return {
+          id: session.user.id,
+          name: session.user.user_metadata.full_name || 'Usuário',
+          email: session.user.email || '',
+          isPro: false,
+          credits: 0
+        };
+      }
+
       return {
-        id: session.user.id,
-        name: session.user.user_metadata.full_name || 'Usuário',
-        email: session.user.email || '',
-        isPro: false,
-        credits: 0
+        id: profile.id,
+        name: profile.full_name,
+        email: profile.email,
+        isPro: profile.is_pro,
+        credits: profile.credits
       };
+    } catch (e) {
+      console.error("Falha crítica no getCurrentUser:", e);
+      return null;
     }
-
-    return {
-      id: profile.id,
-      name: profile.full_name,
-      email: profile.email,
-      isPro: profile.is_pro,
-      credits: profile.credits
-    };
   },
 
   consumeCredit: async (user: User): Promise<User | null> => {
@@ -128,7 +118,6 @@ export const authService = {
     if (user.isPro) return user;
 
     if (user.credits > 0) {
-      // Decrementa no Backend (Segurança)
       const { data, error } = await supabase
         .from('profiles')
         .update({ credits: user.credits - 1 })
@@ -152,13 +141,11 @@ export const authService = {
   upgradeToPro: async (user: User): Promise<User> => {
     if (!supabase) return mockAuth.upgradeToPro(user);
 
-    // SIMULAÇÃO DE PAGAMENTO
-    // Em produção, isso seria um Webhook do Stripe ouvindo 'checkout.session.completed'
     await new Promise(r => setTimeout(r, 2000));
 
     const { data, error } = await supabase
       .from('profiles')
-      .update({ is_pro: true, credits: 9999 }) // Marca como PRO
+      .update({ is_pro: true, credits: 9999 })
       .eq('id', user.id)
       .select()
       .single();
