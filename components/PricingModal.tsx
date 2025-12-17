@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, Star, Zap, ArrowLeft, QrCode, Copy, RefreshCw, XCircle, CheckCircle2 } from 'lucide-react';
+import { Check, Star, Zap, ArrowLeft, QrCode, Copy, RefreshCw, XCircle, CheckCircle2, X } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
 import { authService } from '../services/authService';
 
@@ -136,13 +137,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
           'bg-slate-900'
         }`}>
           
-          {onClose && (step === 'offer' || step === 'error') && (
+          {onClose && (step === 'offer' || step === 'error' || step === 'pix' || step === 'loading_pix') && (
             <button 
               onClick={onClose}
               className="absolute top-4 left-4 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all"
               title="Voltar"
             >
-              <ArrowLeft className="w-6 h-6" />
+              <X className="w-6 h-6" />
             </button>
           )}
 
@@ -203,16 +204,23 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
                 </button>
               </div>
               <p className="text-center text-xs text-gray-400">
-                Ambiente seguro. {paymentService.createPixPayment.name === 'mockPaymentService' ? '(Modo Teste)' : ''}
+                Ambiente seguro. Pagamento único.
               </p>
             </div>
           )}
 
           {/* STEP 2: LOADING */}
           {step === 'loading_pix' && (
-            <div className="flex flex-col items-center justify-center py-10 space-y-4">
+            <div className="flex flex-col items-center justify-center py-6 space-y-6">
                <div className="animate-spin w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full"></div>
                <p className="text-sm text-gray-500">Solicitando QR Code seguro...</p>
+               
+               <button
+                onClick={handleFree}
+                className="w-full bg-white border border-gray-200 text-gray-500 font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-all hover:bg-gray-50"
+              >
+                Cancelar Compra
+              </button>
             </div>
           )}
 
@@ -251,9 +259,16 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
               <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-3 w-full">
                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mt-0.5 shrink-0"></div>
                  <p className="text-xs text-blue-800">
-                   Aguardando pagamento... {paymentId?.startsWith('mock') ? '(Aprovará em 8s)' : 'Assim que você pagar, essa tela atualizará.'}
+                   Aguardando pagamento... Assim que você pagar, essa tela atualizará.
                  </p>
               </div>
+
+              <button
+                onClick={handleFree}
+                className="w-full text-gray-400 text-sm font-medium hover:text-gray-600 transition-colors py-2"
+              >
+                Cancelar e voltar ao app
+              </button>
             </div>
           )}
 
