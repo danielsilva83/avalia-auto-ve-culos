@@ -35,9 +35,15 @@ export const paymentService = {
         body: { email, description: 'AvalIA AI - Acesso PRO Vitalício' },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro retornado pelo Supabase Invoke:", error);
+        throw error;
+      }
 
-      // O Mercado Pago retorna a estrutura dentro de point_of_interaction
+      if (!data || !data.point_of_interaction) {
+        throw new Error("Resposta do Mercado Pago inválida.");
+      }
+
       return {
         paymentId: data.id.toString(),
         qrCodeBase64: data.point_of_interaction.transaction_data.qr_code_base64,
@@ -46,12 +52,15 @@ export const paymentService = {
         ticketUrl: data.point_of_interaction.transaction_data.ticket_url
       };
     } catch (e: any) {
-      console.error("Erro ao gerar Pix real:", e);
-      // Se for ambiente de desenvolvimento (localhost), podemos cair para o mock
+      console.error("Falha na comunicação com a Edge Function:", e);
+      
+      // Se falhar por CORS ou rede, e estiver em localhost, usa o Mock.
+      // Em produção, informa o usuário para tentar novamente.
       if (window.location.hostname === 'localhost') {
         return mockPaymentService.createPixPayment(email);
       }
-      throw new Error("Serviço de pagamento temporariamente indisponível.");
+      
+      throw new Error("Não foi possível gerar o PIX agora. Verifique sua conexão ou tente mais tarde.");
     }
   },
 
@@ -61,14 +70,15 @@ export const paymentService = {
     }
 
     try {
-      // Nota: Esta função 'check-payment-status' também deve ser criada no Supabase
-      // ou você pode consultar a tabela 'profiles' para ver se is_pro mudou via webhook
-      const { data, error } = await supabase.functions.invoke('check-payment-status', {
-        body: { paymentId },
-      });
-
-      if (error) return 'pending';
-      return data.status;
+      // Verificamos diretamente no banco se o perfil já virou PRO (via Webhook)
+      // Isso é mais seguro que consultar o Mercado Pago repetidamente via function
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_pro')
+        .single();
+      
+      if (data?.is_pro) return 'approved';
+      return 'pending';
     } catch (e) {
       return 'pending';
     }

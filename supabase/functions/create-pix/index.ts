@@ -1,23 +1,35 @@
-// @ts-ignore: Deno types are not available in Node environment
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-// @ts-ignore: Deno.env is not defined in the local TypeScript context but is available in the Deno runtime.
-const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
+// @ts-ignore: Deno types
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req: Request) => {
+  // 1. Tratamento de Preflight (CORS)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
-    const { email, description } = await req.json()
+    // Fix: Accessing Deno.env through a type assertion to satisfy the compiler when Deno types are not fully loaded in the environment.
+    const MP_ACCESS_TOKEN = (Deno as any).env.get('MP_ACCESS_TOKEN')
+    
+    if (!MP_ACCESS_TOKEN) {
+      console.error("ERRO: MP_ACCESS_TOKEN não configurado nos Secrets do Supabase.");
+      return new Response(
+        JSON.stringify({ error: 'Configuração do servidor incompleta (Token MP ausente).' }), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
 
-    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+    const { email, description } = await req.json()
+    console.log(`Gerando PIX para: ${email}`);
+
+    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
@@ -36,16 +48,26 @@ serve(async (req: Request) => {
       })
     })
 
-    const data = await response.json()
+    const data = await mpResponse.json()
+
+    if (!mpResponse.ok) {
+      console.error("Erro no Mercado Pago:", data);
+      return new Response(
+        JSON.stringify({ error: 'Mercado Pago recusou a requisição.', details: data }), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: mpResponse.status }
+      )
+    }
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: response.status
+      status: 200
     })
+
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400 
-    })
+    console.error("Erro fatal na Edge Function:", error.message);
+    return new Response(
+      JSON.stringify({ error: error.message }), 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    )
   }
 })
