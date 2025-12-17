@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VehicleForm from './components/PropertyForm'; 
 import AnalysisResult from './components/AnalysisResult';
 import LoginScreen from './components/LoginScreen';
@@ -15,8 +15,9 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const isInitializing = useRef(true);
 
-  // Função centralizada para atualizar usuário e estado
+  // Função para sincronizar sessão com tratamento de erro global
   const syncUserSession = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
@@ -28,19 +29,33 @@ const App: React.FC = () => {
         setAppState(AppState.LOGIN);
       }
     } catch (e) {
-      console.error("Erro ao sincronizar sessão:", e);
+      console.error("Erro crítico na sincronização de sessão:", e);
       setUser(null);
       setAppState(AppState.LOGIN);
+    } finally {
+      isInitializing.current = false;
     }
   }, []);
 
   useEffect(() => {
-    // Inicialização manual na montagem
+    // 1. Timeout de segurança: Se em 6 segundos ainda estiver carregando, força Login.
+    const safetyTimeout = setTimeout(() => {
+      if (appState === AppState.LOADING && isInitializing.current) {
+        console.warn("Auth initialization timed out. Forcing login screen.");
+        setAppState(AppState.LOGIN);
+        isInitializing.current = false;
+      }
+    }, 6000);
+
+    // 2. Tenta recuperar sessão inicial
     syncUserSession();
 
-    // Listener de mudanças de estado do Supabase
+    // 3. Ouve mudanças de estado (Login/Logout)
+    let subscription: any = null;
     if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(`Supabase Auth Event: ${event}`);
+        
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           await syncUserSession();
         } else if (event === 'SIGNED_OUT') {
@@ -48,22 +63,23 @@ const App: React.FC = () => {
           setAppState(AppState.LOGIN);
         }
       });
-
-      return () => {
-        subscription.unsubscribe();
-      };
+      subscription = data.subscription;
     }
+
+    return () => {
+      clearTimeout(safetyTimeout);
+      if (subscription) subscription.unsubscribe();
+    };
   }, [syncUserSession]);
 
   const handleLogin = async () => {
     setError(null);
     try {
       await authService.login(); 
-      // O redirecionamento cuidará do resto via onAuthStateChange
+      // O fluxo continuará via onAuthStateChange
     } catch (e: any) {
       console.error("Login failed", e);
       setError(e.message || "Falha ao iniciar login.");
-      throw e;
     }
   };
 
@@ -95,8 +111,6 @@ const App: React.FC = () => {
 
   const handleFormSubmit = async (data: VehicleFormData) => {
     if (!user) return;
-
-    // Se estiver em modo LOADING por causa da análise, não faz nada
     if (appState === AppState.LOADING) return;
 
     try {
@@ -127,29 +141,31 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  // 1. Splash Screen (Carregamento Inicial Crítico)
+  // Splash Screen de Autenticação (Apenas se não tiver usuário E estiver carregando)
   if (appState === AppState.LOADING && !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <div className="animate-spin w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full mb-4"></div>
-        <p className="text-slate-500 font-medium animate-pulse">Autenticando...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
+        <div className="bg-slate-900 p-4 rounded-2xl shadow-xl mb-6">
+          <Car className="w-10 h-10 text-white" />
+        </div>
+        <div className="animate-spin w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full mb-4"></div>
+        <h2 className="text-xl font-bold text-slate-900 font-['Playfair_Display']">AvalIA AI Automóveis</h2>
+        <p className="text-slate-400 text-sm mt-2 max-w-xs">Restaurando sua sessão segura...</p>
       </div>
     );
   }
 
-  // 2. Tela de Login
   if (appState === AppState.LOGIN) {
     return <LoginScreen onLogin={handleLogin} error={error} />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-900 cursor-pointer" onClick={resetApp}>
             <Car className="w-6 h-6" />
-            <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA AI Automóveis</h1>
+            <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA AI</h1>
           </div>
           
           {user && (
@@ -165,7 +181,7 @@ const App: React.FC = () => {
                 {user.isPro ? (
                   <><Star className="w-3 h-3 fill-current" /> PRO</>
                 ) : (
-                  <>{user.credits} <span className="hidden sm:inline">Gréditos</span></>
+                  <>{user.credits} CRÉDITOS</>
                 )}
               </div>
 
@@ -181,7 +197,6 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-md mx-auto px-4 py-8 relative">
-        
         {appState === AppState.PRICING && (
           <PricingModal onUpgrade={handleUpgrade} onClose={() => setAppState(AppState.FORM)} />
         )}
@@ -189,27 +204,20 @@ const App: React.FC = () => {
         {appState === AppState.FORM && user && (
           <div className="animate-fade-in-up">
             <div className="mb-6 text-center">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Olá, {user.name.split(' ')[0]}
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">Olá, {user.name.split(' ')[0]}</h2>
               <p className="text-gray-500 mt-1 text-sm">
-                {user.isPro 
-                  ? "Acesso PRO liberado." 
-                  : `Você tem ${user.credits} avaliações gratuitas.`}
+                {user.isPro ? "Acesso PRO liberado." : `Você tem ${user.credits} avaliações gratuitas.`}
               </p>
             </div>
             <VehicleForm onSubmit={handleFormSubmit} isLoading={false} />
           </div>
         )}
 
-        {/* Spinner específico para ANÁLISE (quando já temos usuário) */}
         {appState === AppState.LOADING && user && (
            <div className="flex flex-col items-center justify-center pt-20 space-y-4">
               <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
               <h3 className="text-lg font-medium text-gray-600">Analisando Mercado...</h3>
-              <p className="text-sm text-gray-400 text-center max-w-xs">
-                Estamos comparando preços da FIPE e anúncios ativos na web.
-              </p>
+              <p className="text-sm text-gray-400 text-center max-w-xs">Comparando FIPE e anúncios ativos.</p>
            </div>
         )}
 
@@ -224,15 +232,9 @@ const App: React.FC = () => {
             <div className="text-red-500 text-5xl mb-2">⚠️</div>
             <h3 className="text-red-800 font-bold text-lg">Erro na Análise</h3>
             <p className="text-red-600 text-sm">{error}</p>
-            <button 
-              onClick={resetApp}
-              className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              Tentar Novamente
-            </button>
+            <button onClick={resetApp} className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg">Tentar Novamente</button>
           </div>
         )}
-
       </main>
     </div>
   );
