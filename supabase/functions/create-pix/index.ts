@@ -46,7 +46,7 @@ const corsHeaders = {
         'X-Idempotency-Key': crypto.randomUUID()
       },
       body: JSON.stringify({
-        transaction_amount: 47.90, // Para teste real, você pode mudar para 0.01
+        transaction_amount: 0.01, // Para teste real, você pode mudar para 0.01
         description: description || 'AvalIA AI Automóveis - PRO',
         payment_method_id: 'pix',
         installments: 1,
