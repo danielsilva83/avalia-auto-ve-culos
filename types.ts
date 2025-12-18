@@ -1,25 +1,4 @@
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  isPro: boolean;
-  credits: number;
-}
-
-export interface PixPaymentResponse {
-  paymentId: string;
-  qrCodeBase64: string;
-  copyPasteCode: string;
-  status: string;
-  ticketUrl?: string;
-}
-
-export interface GroundingUrl {
-  title: string;
-  uri: string;
-}
-
 export interface VehicleFormData {
   transactionType: 'venda' | 'compra';
   type: string; // Carro, Moto, Caminhonete
@@ -52,15 +31,30 @@ export interface AnalysisResponse {
   salesScripts: string[]; // Section 2: Array of strings
   knowledgePill: string; // Section 3: Concept
   crmData: CrmData; // Section 4: JSON Data
-  groundingUrls?: GroundingUrl[]; // Section 5: Sources from Google Search
+  groundingUrls?: { title: string; uri: string }[]; // Section 5: Sources from Search Grounding
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  isPro: boolean;
+  credits: number;
+}
+
+export interface PixPaymentResponse {
+  paymentId: string;
+  qrCodeBase64: string;
+  copyPasteCode: string;
+  status: string;
+  ticketUrl?: string;
 }
 
 export enum AppState {
   LOGIN = 'LOGIN',
   FORM = 'FORM',
   LOADING = 'LOADING',
-  ANALYZING = 'ANALYZING',
   RESULT = 'RESULT',
   ERROR = 'ERROR',
-  PRICING = 'PRICING'
+  PRICING = 'PRICING' // New state for paywall
 }

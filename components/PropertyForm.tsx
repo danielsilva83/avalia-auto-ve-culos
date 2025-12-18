@@ -1,8 +1,9 @@
-
 import React, { useState } from 'react';
 import { VehicleFormData } from '../types';
 import { 
-  Car, Calendar, Gauge, DollarSign, Tag
+  Car, Calendar, Gauge, Fuel, DollarSign, 
+  Settings2, Tag, ShieldCheck, CheckCircle2,
+  Disc, Wrench, Sun, Radio, Armchair
 } from 'lucide-react';
 
 interface VehicleFormProps {
@@ -39,11 +40,15 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: (name === 'year' || name === 'mileage' || name === 'price')
-          ? (value === '' ? 0 : Number(value)) 
+        [name]: name === 'year' || name === 'mileage' || name === 'price' 
+          ? Number(value) 
           : value,
       }));
     }
+  };
+
+  const setTransactionType = (type: 'venda' | 'compra') => {
+    setFormData(prev => ({ ...prev, transactionType: type }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,128 +67,234 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        
+        {/* Transaction Type Toggle */}
         <div className="flex bg-gray-100 p-1 rounded-lg">
           <button
             type="button"
-            onClick={() => setFormData(p => ({...p, transactionType: 'venda'}))}
+            onClick={() => setTransactionType('venda')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-all ${
-              formData.transactionType === 'venda' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-500'
+              formData.transactionType === 'venda' 
+                ? 'bg-white text-slate-900 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <Tag className="w-4 h-4" /> Vender
           </button>
           <button
             type="button"
-            onClick={() => setFormData(p => ({...p, transactionType: 'compra'}))}
+            onClick={() => setTransactionType('compra')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-all ${
-              formData.transactionType === 'compra' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-500'
+              formData.transactionType === 'compra' 
+                ? 'bg-white text-slate-900 shadow-sm' 
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <DollarSign className="w-4 h-4" /> Comprar
           </button>
         </div>
 
+        {/* Modelo */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Modelo do Veículo</label>
-          <input
-            type="text"
-            name="brandModel"
-            placeholder="Ex: Honda Civic EXL 2.0"
-            required
-            value={formData.brandModel}
-            onChange={handleChange}
-            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              name="brandModel"
+              placeholder="Ex: Honda Civic EXL 2.0"
+              required
+              value={formData.brandModel}
+              onChange={handleChange}
+              className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+            <Car className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          </div>
         </div>
 
+        {/* Grid Ano e KM */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
-            <input
-              type="number"
-              name="year"
-              required
-              min="1950"
-              inputMode="numeric"
-              value={formData.year || ''}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                name="year"
+                required
+                min="1950"
+                max={new Date().getFullYear() + 1}
+                value={formData.year}
+                onChange={handleChange}
+                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            </div>
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">KM Atual</label>
-            <input
-              type="number"
-              name="mileage"
-              required
-              min="0"
-              step="1000"
-              inputMode="numeric"
-              value={formData.mileage || ''}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                name="mileage"
+                required
+                min="0"
+                value={formData.mileage}
+                onChange={handleChange}
+                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <Gauge className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            </div>
           </div>
         </div>
 
+        {/* Grid Transmissão e Combustível */}
         <div className="grid grid-cols-2 gap-4">
            <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Câmbio</label>
-            <select name="transmission" value={formData.transmission} onChange={handleChange} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none appearance-none">
-              <option>Automático</option>
-              <option>Manual</option>
-              <option>CVT</option>
-              <option>Automatizado</option>
-            </select>
+            <div className="relative">
+              <select
+                name="transmission"
+                value={formData.transmission}
+                onChange={handleChange}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+              >
+                <option>Automático</option>
+                <option>Manual</option>
+                <option>CVT</option>
+                <option>Automatizado</option>
+              </select>
+              <div className="absolute right-3 top-3 pointer-events-none text-gray-400">
+                <Settings2 className="w-4 h-4" />
+              </div>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Combustível</label>
-            <select name="fuel" value={formData.fuel} onChange={handleChange} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none appearance-none">
-              <option>Flex</option>
-              <option>Gasolina</option>
-              <option>Diesel</option>
-              <option>Híbrido</option>
-              <option>Elétrico</option>
-            </select>
+            <div className="relative">
+              <select
+                name="fuel"
+                value={formData.fuel}
+                onChange={handleChange}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+              >
+                <option>Flex</option>
+                <option>Gasolina</option>
+                <option>Diesel</option>
+                <option>Híbrido</option>
+                <option>Elétrico</option>
+              </select>
+              <div className="absolute right-3 top-3 pointer-events-none">
+                <Fuel className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Estado e Cor */}
+        <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Conservação</label>
+              <select
+                name="condition"
+                value={formData.condition}
+                onChange={handleChange}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option>Excelente</option>
+                <option>Bom</option>
+                <option>Regular</option>
+                <option>Ruim</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+              <input
+                type="text"
+                name="color"
+                placeholder="Ex: Prata"
+                required
+                value={formData.color}
+                onChange={handleChange}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+        </div>
+
+        {/* Opcionais (Checkboxes) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Diferenciais</label>
           <div className="grid grid-cols-2 gap-2">
             <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
               <input type="checkbox" name="hasServiceHistory" checked={formData.hasServiceHistory} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
               <span className="text-xs text-gray-700">Revisado</span>
             </label>
             <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
               <input type="checkbox" name="singleOwner" checked={formData.singleOwner} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
               <span className="text-xs text-gray-700">Único Dono</span>
+            </label>
+            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
+              <input type="checkbox" name="hasLeather" checked={formData.hasLeather} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <Armchair className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-700">Couro</span>
+            </label>
+            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
+              <input type="checkbox" name="hasSunroof" checked={formData.hasSunroof} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <Sun className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-700">Teto Solar</span>
+            </label>
+            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
+              <input type="checkbox" name="hasMultimedia" checked={formData.hasMultimedia} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <Radio className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-700">Multimídia</span>
+            </label>
+             <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
+              <input type="checkbox" name="isArmored" checked={formData.isArmored} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
+              <Disc className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-700">Blindado</span>
             </label>
           </div>
         </div>
 
+        {/* Preço */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Preço {formData.transactionType === 'venda' ? 'Desejado' : 'Ofertado'} (R$)
           </label>
-          <input
-            type="number"
-            name="price"
-            min="0"
-            inputMode="numeric"
-            placeholder="Opcional - Sugerimos se vazio"
-            value={formData.price || ''}
-            onChange={handleChange}
-            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-bold"
-          />
+          <div className="relative">
+            <input
+              type="number"
+              name="price"
+              required
+              min="0"
+              placeholder="0,00"
+              value={formData.price || ''}
+              onChange={handleChange}
+              className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-gray-800"
+            />
+            <DollarSign className="absolute left-3 top-3 w-5 h-5 text-green-600" />
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-4 rounded-lg font-bold text-white bg-slate-800 hover:bg-slate-900 transition-all active:scale-95 disabled:bg-gray-400"
+          className={`w-full mt-2 py-4 rounded-lg font-bold text-white shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] ${
+            isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-900'
+          }`}
         >
-          {isLoading ? 'Analisando...' : 'Avaliar Agora'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Analisando Veículo...
+            </span>
+          ) : (
+            'Avaliar Agora'
+          )}
         </button>
       </form>
     </div>

@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { VehicleFormData, AnalysisResponse } from "../types";
 
@@ -17,60 +16,187 @@ const parseResponse = (text: string): AnalysisResponse => {
 
   try {
     const sections = text.split(/\[\[SEÇÃO \d\]\]/);
-    if (sections.length > 1) result.priceAnalysis = sections[1].trim();
-    if (sections.length > 2) {
-      result.salesScripts = sections[2].trim().split('\n').map(s => s.trim().replace(/^[-*•"']\s*/, '').replace(/["']$/, '')).filter(s => s.length > 0);
+    
+    if (sections.length > 1) {
+      result.priceAnalysis = sections[1].trim();
     }
-    if (sections.length > 3) result.knowledgePill = sections[3].trim();
+
+    if (sections.length > 2) {
+      const scriptsText = sections[2].trim();
+      result.salesScripts = scriptsText
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        .map(s => s.replace(/^[-*•"']\s*/, '').replace(/["']$/, ''));
+    }
+
+    if (sections.length > 3) {
+      result.knowledgePill = sections[3].trim();
+    }
+
     if (sections.length > 4) {
-      const jsonText = sections[4].trim().replace(/```json/g, '').replace(/```/g, '');
+      let jsonText = sections[4].trim();
+      jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '');
+      
       const start = jsonText.indexOf('{');
       const end = jsonText.lastIndexOf('}');
-      if (start !== -1 && end !== -1) result.crmData = JSON.parse(jsonText.substring(start, end + 1));
+      
+      if (start !== -1 && end !== -1) {
+         const cleanJson = jsonText.substring(start, end + 1);
+         try {
+            result.crmData = JSON.parse(cleanJson);
+         } catch (jsonError) {
+            console.warn("JSON parsing failed. Attempting cleanup...", jsonError);
+            try {
+              const fixedJson = cleanJson.replace(/'/g, '"');
+              result.crmData = JSON.parse(fixedJson);
+            } catch (e) {
+               console.error("Failed to recover JSON:", cleanJson);
+            }
+         }
+      }
     }
-  } catch (error) { console.error("Error parsing response:", error); }
+  } catch (error) {
+    console.error("Error parsing response:", error);
+  }
+
   return result;
 };
 
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
+  // Corrected: Always use the process.env.API_KEY directly in the constructor as per guidelines.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const transactionContext = data.transactionType === 'compra' ? 'COMPRA' : 'VENDA';
-  const priceInfo = data.price > 0 ? `R$ ${data.price.toLocaleString('pt-BR')}` : 'NÃO INFORMADO (Analise o mercado e sugira o valor ideal)';
+
+  const transactionContext = data.transactionType === 'compra' ? 'COMPRA (Avaliação para pagar)' : 'VENDA (Preço para anunciar)';
+  
+  // Format amenities list
+  const amenities = [
+    data.transmission === 'Automático' ? 'Câmbio Automático' : 'Câmbio Manual',
+    data.fuel ? `Combustível: ${data.fuel}` : null,
+    data.isArmored ? 'Blindado' : null,
+    data.hasSunroof ? 'Teto Solar' : null,
+    data.hasLeather ? 'Bancos de Couro' : null,
+    data.hasMultimedia ? 'Multimídia' : null,
+    data.hasServiceHistory ? 'Todas as Revisões em Dia' : 'Sem histórico de revisão informado',
+    data.singleOwner ? 'Único Dono' : null
+  ].filter(Boolean).join(', ');
 
   const prompt = `
-    Analise para ${transactionContext}:
+    Analise o seguinte veículo para fins de **${transactionContext}**:
+    
+    DETALHES DO VEÍCULO:
+    - Tipo: ${data.type}
     - Modelo: ${data.brandModel}
-    - Ano: ${data.year}
-    - KM: ${data.mileage}
-    - Conservação: ${data.condition}
-    - Opcionais: ${data.singleOwner ? 'Único Dono' : ''}, ${data.hasServiceHistory ? 'Revisado' : ''}
-    - Preço Indicado: ${priceInfo}
-    Use googleSearch para FIPE e Mercado Real atual.
+    - Ano/Modelo: ${data.year}
+    - Quilometragem: ${data.mileage} km
+    - Cor: ${data.color}
+    - Estado de Conservação: ${data.condition}
+    - Diferenciais/Opcionais: ${amenities}
+    - Preço ${data.transactionType === 'venda' ? 'Desejado pelo Dono' : 'Oferecido'}: R$ ${data.price.toLocaleString('pt-BR')}
+
+    Utilize o Google Search para encontrar:
+    1. O valor atualizado na Tabela FIPE para este modelo e ano.
+    2. Ofertas reais de mercado (Webmotors, OLX, iCarros) para veículos similares (mesmo ano/km).
+    
+    Considere fortemente o impacto da quilometragem (se está alta ou baixa para o ano) e o histórico de revisões na liquidez e valor final.
   `;
 
   const systemInstruction = `
-    Você é o AvalIA AI Automóveis. Forneça análise FIPE x Mercado Real em 4 seções:
-    [[SEÇÃO 1]] Análise Markdown direta com emojis. Inclua FIPE e comparativo de anúncios.
-    [[SEÇÃO 2]] Scripts de negociação persuasivos.
-    [[SEÇÃO 3]] Pílula técnica curta sobre o modelo.
-    [[SEÇÃO 4]] JSON: { "resumo_veiculo": "", "faixa_preco_sugerida": "", "nivel_dificuldade_venda": "", "tags_sugeridas": [] }
+    Você é o "AvalIA AI Automóveis", um Consultor Sênior de Mercado Automotivo e Mentor para revendedores de carros.
+
+    OBJETIVO:
+    Analisar dados de um veículo, estimar a precificação comparando FIPE x Mercado Real e fornecer argumentos irrefutáveis.
+
+    CONTEXTO:
+    Se for VENDA: Foque em como justificar o preço (ou abaixá-lo se estiver fora da realidade) usando KM, estado dos pneus e opcionais valorizados.
+    Se for COMPRA: Foque em identificar riscos (desvalorização alta, "micar" no estoque) e margem de negociação.
+
+    PERFIL DE RESPOSTA (Mobile-First):
+    1. Seja direto e visual (use bullet points e emojis).
+    2. Compare sempre com a FIPE (ex: "Está 10% abaixo da FIPE").
+    3. Tom de voz: Especialista, seguro e focado em lucro/liquidez.
+
+    IMPORTANTE:
+    Você DEVE usar a ferramenta 'googleSearch' para buscar a Tabela FIPE atual e anúncios concorrentes.
+
+    ESTRUTURA DE SAÍDA OBRIGATÓRIA:
+    Use EXATAMENTE os delimitadores abaixo.
+
+    [[SEÇÃO 1]]
+    Análise de Mercado e Preço.
+    - Mostre a FIPE Estimada.
+    - Estime uma faixa de preço real de venda (Mínimo - Ideal - Teto).
+    - Destaque 3 pontos fortes (ex: Baixa KM, Único dono) e 2 pontos de atenção (ex: Cor prata, blindagem vencida).
+    - Use Markdown.
+
+    [[SEÇÃO 2]]
+    Script de Negociação.
+    - Forneça 2 frases "matadoras" para usar na negociação (seja para comprar barato ou vender bem).
+
+    [[SEÇÃO 3]]
+    Pílula Mecânica/Mercado.
+    - Explique brevemente (max 2 frases) um detalhe técnico ou de mercado sobre esse modelo específico. Ex: "Esse motor THP requer atenção na corrente de comando", ou "Honda Fit tem liquidez D+0".
+
+    [[SEÇÃO 4]]
+    CRM Data (JSON).
+    - Gere um objeto JSON válido.
+    - Exemplo:
+    {
+      "resumo_veiculo": "Honda Civic 2020 EXL, 40k km...",
+      "faixa_preco_sugerida": "R$ X - R$ Y",
+      "nivel_dificuldade_venda": "Alto/Médio/Baixo",
+      "tags_sugeridas": ["Giro Rápido", "Revisado", "Baixa KM"]
+    }
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview", 
-    contents: prompt,
-    config: { systemInstruction, tools: [{ googleSearch: {} }] },
-  });
+  try {
+    // Corrected: Use 'gemini-3-flash-preview' for basic text tasks with Search Grounding as per guidelines.
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview", 
+      contents: prompt,
+      config: {
+        systemInstruction: systemInstruction,
+        tools: [{ googleSearch: {} }],
+        temperature: 0.7, 
+      },
+    });
 
-  const candidates = response.candidates;
-  if (!candidates || candidates.length === 0) {
-    throw new Error("A IA não retornou candidatos válidos.");
+    // Verificação Robusta de Resposta
+    if (!response || !response.candidates || response.candidates.length === 0) {
+      console.error("Gemini retornou resposta vazia (sem candidates).", response);
+      throw new Error("A IA não conseguiu processar sua solicitação. Tente novamente.");
+    }
+
+    const candidate = response.candidates[0];
+
+    // Verifica bloqueios de segurança
+    if (candidate.finishReason !== "STOP" && !response.text) {
+      console.error("Gemini bloqueado ou erro.", {
+         finishReason: candidate.finishReason,
+         safetyRatings: candidate.safetyRatings
+      });
+      throw new Error(`A análise foi interrompida pela IA. Motivo: ${candidate.finishReason}`);
+    }
+
+    // Corrected: response.text is a property, not a method.
+    const text = response.text;
+    if (!text) {
+      console.error("Texto da resposta indefinido.", JSON.stringify(response, null, 2));
+      throw new Error("A IA retornou dados incompletos. Por favor, tente novamente.");
+    }
+
+    // Corrected: Extract grounding URLs from groundingChunks to comply with "MUST ALWAYS" rule for Google Search tools.
+    const groundingUrls = candidate.groundingMetadata?.groundingChunks
+      ?.map((chunk: any) => ({
+        title: chunk.web?.title || chunk.web?.uri || "Fonte",
+        uri: chunk.web?.uri
+      }))
+      .filter((item: any) => item.uri);
+
+    const parsed = parseResponse(text);
+    return { ...parsed, groundingUrls };
+  } catch (error) {
+    console.error("Error calling Gemini:", error);
+    throw error;
   }
-
-  const candidate = candidates[0];
-  const groundingUrls = candidate.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
-    title: chunk.web?.title || "Fonte", uri: chunk.web?.uri
-  })).filter((item: any) => item.uri);
-
-  return { ...parseResponse(response.text || ""), groundingUrls };
 };
