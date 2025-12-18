@@ -2,36 +2,9 @@
 import { User } from "../types";
 import { supabase } from "./supabaseClient";
 
-const MOCK_STORAGE_KEY = 'avalia_auto_user_mock';
-
-const mockAuth = {
-  login: async (): Promise<User> => {
-    await new Promise(r => setTimeout(r, 1000));
-    const newUser: User = {
-      id: 'mock_user',
-      name: 'Visitante (Mock)',
-      email: 'mock@exemplo.com',
-      isPro: false,
-      credits: 2
-    };
-    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(newUser));
-    return newUser;
-  },
-  logout: async () => localStorage.removeItem(MOCK_STORAGE_KEY),
-  consumeCredit: async (user: User) => {
-    if (user.isPro) return user;
-    if (user.credits > 0) return { ...user, credits: user.credits - 1 };
-    return null;
-  },
-  getCurrentUser: async () => {
-    const s = localStorage.getItem(MOCK_STORAGE_KEY);
-    return s ? JSON.parse(s) : null;
-  }
-};
-
 export const authService = {
   login: async () => {
-    if (!supabase) return mockAuth.login();
+    if (!supabase) throw new Error("Supabase não disponível.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: process.env.VITE_SITE_URL || window.location.origin }
@@ -40,18 +13,18 @@ export const authService = {
   },
 
   logout: async () => {
-    if (!supabase) return mockAuth.logout();
+    if (!supabase) return;
     await supabase.auth.signOut();
   },
 
   getCurrentUser: async (): Promise<User | null> => {
-    if (!supabase) return mockAuth.getCurrentUser();
+    if (!supabase) return null;
 
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) return null;
 
-      // Forçar busca no banco para pegar o status PRO atualizado pelo Webhook
+      // Busca dados frescos do banco (importante para detectar virada de chave PRO)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -82,14 +55,16 @@ export const authService = {
   },
 
   consumeCredit: async (user: User): Promise<User | null> => {
-    if (!supabase) return mockAuth.consumeCredit(user);
+    if (!supabase) return null;
     if (user.isPro) return user;
+    
     if (user.credits > 0) {
       const { data, error } = await supabase
         .from('profiles')
         .update({ credits: user.credits - 1 })
         .eq('id', user.id)
         .select().single();
+        
       if (error) return null;
       return { ...user, credits: data.credits };
     }

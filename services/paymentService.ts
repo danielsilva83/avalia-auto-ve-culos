@@ -3,37 +3,21 @@ import { supabase } from "./supabaseClient";
 import { authService } from "./authService";
 import { PixPaymentResponse } from "../types";
 
-const mockPaymentService = {
-  createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    console.log("[MOCK] Criando pagamento simulado para:", email);
-    await new Promise(r => setTimeout(r, 1500));
-    localStorage.setItem('mock_payment_start', Date.now().toString());
-
-    return {
-      paymentId: "mock_" + Date.now(),
-      qrCodeBase64: "", 
-      copyPasteCode: "00020101021226580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913AvalIA AI Automóveis6008Brasilia62070503***6304ABCD",
-      status: "pending"
-    };
-  },
-  
-  checkPaymentStatus: async (paymentId: string): Promise<string> => {
-    const startStr = localStorage.getItem('mock_payment_start');
-    if (!startStr) return 'pending';
-    const elapsed = Date.now() - parseInt(startStr);
-    return elapsed > 8000 ? 'approved' : 'pending';
-  }
-};
-
 export const paymentService = {
+  /**
+   * Solicita a geração de um PIX real via Edge Function do Supabase.
+   */
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    if (!supabase) return mockPaymentService.createPixPayment(email);
+    if (!supabase) {
+      throw new Error("Conexão com banco de dados não disponível.");
+    }
 
     try {
       const user = await authService.getCurrentUser();
       if (!user) throw new Error("Usuário não identificado.");
 
-      console.log("[PaymentService] Solicitando PIX para User:", user.id);
+      console.log("[PaymentService] Solicitando PIX real para:", user.id);
+      
       const { data, error } = await supabase.functions.invoke('create-pix', {
         body: { 
           email, 
@@ -43,11 +27,12 @@ export const paymentService = {
       });
 
       if (error) {
-        console.error("[PaymentService] Erro na Edge Function:", error);
-        if (window.location.hostname === 'localhost') return mockPaymentService.createPixPayment(email);
-        throw error;
+        console.error("[PaymentService] Erro retornado pela Edge Function:", error);
+        throw new Error(error.message || "Falha ao processar pagamento com Mercado Pago.");
       }
 
+      console.log("[PaymentService] PIX gerado com sucesso pelo MP.");
+      
       return {
         paymentId: data.id.toString(),
         qrCodeBase64: data.point_of_interaction?.transaction_data?.qr_code_base64 || "",
@@ -56,23 +41,33 @@ export const paymentService = {
         ticketUrl: data.point_of_interaction?.transaction_data?.ticket_url
       };
     } catch (e: any) {
-      console.error("[PaymentService] Erro ao gerar PIX:", e.message);
+      console.error("[PaymentService] Exceção crítica ao gerar PIX:", e.message);
       throw e;
     }
   },
 
+  /**
+   * Verifica se o usuário tornou-se PRO no banco de dados.
+   * O Webhook 'mp-webhook' é responsável por mudar este status no banco
+   * assim que o Mercado Pago confirma o recebimento.
+   */
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
-    if (paymentId.startsWith('mock_')) {
-      return mockPaymentService.checkPaymentStatus(paymentId);
+    if (!supabase) {
+      console.warn("[checkPaymentStatus] Supabase não configurado.");
+      return 'pending';
     }
 
-    if (!supabase) return 'pending';
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 'pending';
+      // Obtemos o usuário logado para verificar o status dele no perfil
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.warn("[checkPaymentStatus] Usuário perdeu a sessão durante o polling.");
+        return 'pending';
+      }
 
-      // Consultar banco sem cache (bypass implícito do supabase-js)
+      // Consulta direta à tabela de profiles para verificar se o campo is_pro mudou para true
+      // Usamos .select('is_pro') e desativamos cache implícito
       const { data, error } = await supabase
         .from('profiles')
         .select('is_pro')
@@ -80,16 +75,17 @@ export const paymentService = {
         .single();
       
       if (error) {
-        console.error("[checkPaymentStatus] Erro DB:", error.message);
+        console.error("[checkPaymentStatus] Erro ao consultar status no banco:", error.message);
         return 'pending';
       }
       
-      // LOG CRUCIAL: Verifique no console do navegador se isso muda de false para true
-      console.log(`[Polling Status] User: ${user.id} | Pagamento: ${paymentId} | is_pro: ${data?.is_pro}`);
+      const isPro = data?.is_pro === true;
+      console.log(`[Polling DB] User: ${user.id} | Status PRO: ${isPro}`);
       
-      return data?.is_pro ? 'approved' : 'pending';
+      // Se is_pro for true, significa que o Webhook já recebeu a confirmação do MP
+      return isPro ? 'approved' : 'pending';
     } catch (e: any) {
-      console.error("[checkPaymentStatus] Exceção:", e.message);
+      console.error("[checkPaymentStatus] Erro inesperado no polling:", e.message);
       return 'pending';
     }
   }

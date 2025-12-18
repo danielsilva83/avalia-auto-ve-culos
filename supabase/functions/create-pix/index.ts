@@ -41,7 +41,7 @@ const corsHeaders = {
         'X-Idempotency-Key': crypto.randomUUID()
       },
       body: JSON.stringify({
-        transaction_amount: 47.90,
+        transaction_amount: 0.01,
         description: description || 'AvalIA AI Automóveis - PRO',
         payment_method_id: 'pix',
         external_reference: userId, // Vínculo crucial para o Webhook
