@@ -41,7 +41,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
       setFormData(prev => ({
         ...prev,
         [name]: name === 'year' || name === 'mileage' || name === 'price' 
-          ? Number(value) 
+          ? (value === '' ? 0 : Number(value)) 
           : value,
       }));
     }
@@ -122,7 +122,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
                 required
                 min="1950"
                 max={new Date().getFullYear() + 1}
-                value={formData.year}
+                inputMode="numeric"
+                value={formData.year || ''}
                 onChange={handleChange}
                 className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
@@ -138,7 +139,9 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
                 name="mileage"
                 required
                 min="0"
-                value={formData.mileage}
+                step="1000"
+                inputMode="numeric"
+                value={formData.mileage || ''}
                 onChange={handleChange}
                 className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
@@ -266,8 +269,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
             <input
               type="number"
               name="price"
-              required
               min="0"
+              inputMode="numeric"
               placeholder="0,00"
               value={formData.price || ''}
               onChange={handleChange}
