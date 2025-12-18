@@ -1,10 +1,11 @@
 
 import { supabase } from "./supabaseClient";
+import { authService } from "./authService";
 import { PixPaymentResponse } from "../types";
 
 const mockPaymentService = {
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    console.log("Modo Mock: Criando pagamento para", email);
+    console.log("Modo Mock ativado para:", email);
     await new Promise(r => setTimeout(r, 1500));
     localStorage.setItem('mock_payment_start', Date.now().toString());
 
@@ -31,17 +32,22 @@ export const paymentService = {
     }
 
     try {
+      const user = await authService.getCurrentUser();
+      if (!user) throw new Error("Usuário não identificado.");
+
       const { data, error } = await supabase.functions.invoke('create-pix', {
-        body: { email, description: 'AvalIA AI - Acesso PRO Vitalício' },
+        body: { 
+          email, 
+          userId: user.id, // Enviando o ID do usuário logado
+          description: 'AvalIA AI - Acesso PRO Vitalício' 
+        },
       });
 
       if (error) {
-        console.error("Erro retornado pelo Supabase Invoke:", error);
+        if (window.location.hostname === 'localhost') {
+           return mockPaymentService.createPixPayment(email);
+        }
         throw error;
-      }
-
-      if (!data || !data.point_of_interaction) {
-        throw new Error("Resposta do Mercado Pago inválida.");
       }
 
       return {
@@ -52,15 +58,8 @@ export const paymentService = {
         ticketUrl: data.point_of_interaction.transaction_data.ticket_url
       };
     } catch (e: any) {
-      console.error("Falha na comunicação com a Edge Function:", e);
-      
-      // Se falhar por CORS ou rede, e estiver em localhost, usa o Mock.
-      // Em produção, informa o usuário para tentar novamente.
-      if (window.location.hostname === 'localhost') {
-        return mockPaymentService.createPixPayment(email);
-      }
-      
-      throw new Error("Não foi possível gerar o PIX agora. Verifique sua conexão ou tente mais tarde.");
+      console.error("Erro ao gerar PIX:", e.message);
+      throw e;
     }
   },
 
@@ -70,8 +69,8 @@ export const paymentService = {
     }
 
     try {
-      // Verificamos diretamente no banco se o perfil já virou PRO (via Webhook)
-      // Isso é mais seguro que consultar o Mercado Pago repetidamente via function
+      // O polling agora apenas checa se o campo is_pro no banco mudou
+      // O webhook será responsável por mudar esse campo.
       const { data } = await supabase
         .from('profiles')
         .select('is_pro')
