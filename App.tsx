@@ -15,66 +15,67 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const authInitialized = useRef(false);
+  const isProcessingAuth = useRef(false);
 
   useEffect(() => {
     const client = supabase;
-    
-    // Se o Supabase não estiver configurado, vai direto para o Login (que mostrará erro se tentar logar)
     if (!client) {
       setAppState(AppState.LOGIN);
       return;
     }
 
-    // Timeout de Segurança: Se em 3 segundos nada acontecer, força a tela de Login
-    const safetyTimeout = setTimeout(() => {
-      if (!authInitialized.current) {
-        console.warn("Auth initialization timed out. Forcing login screen.");
+    // Função para carregar o perfil e mudar o estado
+    const loadUserData = async (authUser: any) => {
+      if (isProcessingAuth.current) return;
+      isProcessingAuth.current = true;
+      try {
+        const profile = await authService.getProfile(authUser);
+        setUser(profile);
+        setAppState(AppState.FORM);
+      } catch (e) {
+        console.error("Erro ao carregar perfil:", e);
         setAppState(AppState.LOGIN);
+      } finally {
+        isProcessingAuth.current = false;
       }
-    }, 3500);
+    };
 
-    // Listener de estado de autenticação (única fonte de verdade para o estado do usuário)
+    // 1. Escuta mudanças de estado (Login/Logout/OAuth Redirect)
     const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
-      console.log("Supabase Auth Event:", event);
+      console.log("Auth Event:", event);
       
       if (session?.user) {
-        try {
-          const profile = await authService.getProfile(session.user);
-          setUser(profile);
-          authInitialized.current = true;
-          setAppState(AppState.FORM);
-        } catch (e) {
-          console.error("Erro ao carregar perfil no listener:", e);
-          setAppState(AppState.LOGIN);
-        }
-      } else {
+        await loadUserData(session.user);
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        authInitialized.current = true;
         setAppState(AppState.LOGIN);
       }
     });
 
-    // Verificação inicial manual caso o listener demore a disparar
-    const checkInitialSession = async () => {
-      try {
-        const { data: { session } } = await client.auth.getSession();
-        if (session?.user && !authInitialized.current) {
-          const profile = await authService.getProfile(session.user);
-          setUser(profile);
-          authInitialized.current = true;
-          setAppState(AppState.FORM);
+    // 2. Verificação inicial de sessão
+    const initSession = async () => {
+      const { data: { session } } = await client.auth.getSession();
+      
+      if (session?.user) {
+        await loadUserData(session.user);
+      } else {
+        // Se não tem sessão, mas a URL tem um hash de access_token, 
+        // significa que o Supabase ainda está processando o redirecionamento do Google.
+        // Aguardamos o onAuthStateChange cuidar disso.
+        const hasHash = window.location.hash.includes('access_token=');
+        if (!hasHash) {
+          // Apenas se não houver indicativo de login em curso, mostramos a tela de login
+          setTimeout(() => {
+            setAppState(prev => prev === AppState.LOADING ? AppState.LOGIN : prev);
+          }, 500);
         }
-      } catch (err) {
-        console.error("Initial session check error:", err);
       }
     };
-    
-    checkInitialSession();
+
+    initSession();
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
     };
   }, []);
 
@@ -148,7 +149,7 @@ const App: React.FC = () => {
         </div>
         <div className="animate-spin w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full mb-4"></div>
         <h2 className="text-xl font-bold text-slate-900 font-['Playfair_Display']">AvalIA AI Automóveis</h2>
-        <p className="text-slate-400 text-sm mt-2 max-w-xs">Restaurando sua sessão segura...</p>
+        <p className="text-slate-400 text-sm mt-2 max-w-xs">Sincronizando sua conta segura...</p>
       </div>
     );
   }

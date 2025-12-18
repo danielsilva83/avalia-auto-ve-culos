@@ -7,7 +7,13 @@ export const authService = {
     if (!supabase) throw new Error("Supabase não disponível.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: process.env.VITE_SITE_URL || window.location.origin }
+      options: { 
+        redirectTo: window.location.origin,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
     });
     if (error) throw error;
   },
@@ -20,7 +26,7 @@ export const authService = {
   getProfile: async (authUser: any): Promise<User> => {
     const fallbackUser: User = {
       id: authUser.id,
-      name: authUser.user_metadata?.full_name || 'Usuário',
+      name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'Usuário',
       email: authUser.email || '',
       isPro: false,
       credits: 2
@@ -29,7 +35,6 @@ export const authService = {
     if (!supabase) return fallbackUser;
     
     try {
-      // Usamos um timeout na busca do perfil se possível, ou apenas garantimos o try/catch
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -37,7 +42,18 @@ export const authService = {
         .maybeSingle();
 
       if (error || !profile) {
-        console.warn("Perfil não encontrado ou erro no banco. Usando fallback.");
+        // Tenta criar o perfil se ele não existir
+        try {
+          await supabase.from('profiles').upsert({
+            id: authUser.id,
+            full_name: fallbackUser.name,
+            email: fallbackUser.email,
+            credits: 2,
+            is_pro: false
+          });
+        } catch (upsertErr) {
+          console.warn("Não foi possível criar perfil no DB, usando memória.");
+        }
         return fallbackUser;
       }
 
@@ -49,7 +65,7 @@ export const authService = {
         credits: typeof profile.credits === 'number' ? profile.credits : 0
       };
     } catch (e) {
-      console.error("Erro crítico ao buscar perfil:", e);
+      console.error("Erro ao buscar perfil:", e);
       return fallbackUser;
     }
   },
