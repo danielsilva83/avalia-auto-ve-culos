@@ -89,7 +89,6 @@ const App: React.FC = () => {
   };
 
   const handleUpgradeSuccess = async () => {
-    // Recarrega o usuário do banco para garantir que temos os dados atualizados pelo Webhook
     const updatedUser = await authService.getCurrentUser();
     if (updatedUser) {
       setUser(updatedUser);
@@ -99,7 +98,7 @@ const App: React.FC = () => {
 
   const handleFormSubmit = async (data: VehicleFormData) => {
     if (!user) return;
-    if (appState === AppState.LOADING) return;
+    if (appState === AppState.LOADING || appState === AppState.ANALYZING) return;
 
     try {
       const userWithCredits = await authService.consumeCredit(user);
@@ -110,7 +109,7 @@ const App: React.FC = () => {
       }
 
       setUser(userWithCredits);
-      setAppState(AppState.LOADING);
+      setAppState(AppState.ANALYZING);
       setError(null);
 
       const response = await analyzeVehicle(data);
@@ -128,6 +127,7 @@ const App: React.FC = () => {
     setError(null);
   };
 
+  // Carregamento inicial do app (sem usuário)
   if (appState === AppState.LOADING && !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
@@ -199,7 +199,16 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* LOADING Geral (Logout ou Transições) */}
         {appState === AppState.LOADING && user && (
+           <div className="flex flex-col items-center justify-center pt-20 space-y-4">
+              <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+              <h3 className="text-lg font-medium text-gray-600">Carregando...</h3>
+           </div>
+        )}
+
+        {/* ANALYZING (Processamento específico da IA) */}
+        {appState === AppState.ANALYZING && user && (
            <div className="flex flex-col items-center justify-center pt-20 space-y-4">
               <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
               <h3 className="text-lg font-medium text-gray-600">Analisando Mercado...</h3>

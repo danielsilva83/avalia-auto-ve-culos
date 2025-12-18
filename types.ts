@@ -59,7 +59,6 @@ export enum AppState {
   LOGIN = 'LOGIN',
   FORM = 'FORM',
   LOADING = 'LOADING',
-  ANALYZING = 'ANALYZING',
   RESULT = 'RESULT',
   ERROR = 'ERROR',
   PRICING = 'PRICING'
