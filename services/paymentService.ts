@@ -33,7 +33,7 @@ export const paymentService = {
       const user = await authService.getCurrentUser();
       if (!user) throw new Error("Usuário não identificado.");
 
-      console.log("[PaymentService] Chamando Edge Function create-pix...");
+      console.log("[PaymentService] Solicitando PIX para User:", user.id);
       const { data, error } = await supabase.functions.invoke('create-pix', {
         body: { 
           email, 
@@ -48,7 +48,6 @@ export const paymentService = {
         throw error;
       }
 
-      console.log("[PaymentService] Pix gerado com sucesso. ID:", data.id);
       return {
         paymentId: data.id.toString(),
         qrCodeBase64: data.point_of_interaction?.transaction_data?.qr_code_base64 || "",
@@ -57,13 +56,12 @@ export const paymentService = {
         ticketUrl: data.point_of_interaction?.transaction_data?.ticket_url
       };
     } catch (e: any) {
-      console.error("[PaymentService] Exceção ao gerar PIX:", e.message);
+      console.error("[PaymentService] Erro ao gerar PIX:", e.message);
       throw e;
     }
   },
 
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
-    // 1. Se for mock, usa a lógica de tempo
     if (paymentId.startsWith('mock_')) {
       return mockPaymentService.checkPaymentStatus(paymentId);
     }
@@ -71,17 +69,10 @@ export const paymentService = {
     if (!supabase) return 'pending';
 
     try {
-      // 2. Pegar o ID do usuário atual para checar o perfil dele
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.warn("[checkPaymentStatus] Sem sessão de usuário ativa.");
-        return 'pending';
-      }
+      if (!user) return 'pending';
 
-      console.log(`[checkPaymentStatus] Verificando DB para user: ${user.id} (Payment: ${paymentId})`);
-
-      // 3. Consultar o banco de dados diretamente
-      // Usamos uma consulta simples para verificar se o Webhook já atualizou o is_pro
+      // Consultar banco sem cache (bypass implícito do supabase-js)
       const { data, error } = await supabase
         .from('profiles')
         .select('is_pro')
@@ -89,16 +80,16 @@ export const paymentService = {
         .single();
       
       if (error) {
-        console.error("[checkPaymentStatus] Erro na consulta ao banco:", error.message);
+        console.error("[checkPaymentStatus] Erro DB:", error.message);
         return 'pending';
       }
       
-      console.log("[checkPaymentStatus] Resultado do banco - is_pro:", data?.is_pro);
+      // LOG CRUCIAL: Verifique no console do navegador se isso muda de false para true
+      console.log(`[Polling Status] User: ${user.id} | Pagamento: ${paymentId} | is_pro: ${data?.is_pro}`);
       
-      // Se is_pro for true, o pagamento foi aprovado e processado pelo Webhook
       return data?.is_pro ? 'approved' : 'pending';
     } catch (e: any) {
-      console.error("[checkPaymentStatus] Exceção inesperada:", e.message);
+      console.error("[checkPaymentStatus] Exceção:", e.message);
       return 'pending';
     }
   }

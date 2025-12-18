@@ -6,9 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Interface para logs internos
+const log = (msg: string, data?: any) => {
+  console.log(`[MP-WEBHOOK] ${msg}`, data ? JSON.stringify(data, null, 2) : '');
+};
+
 (Deno as any).serve(async (req: Request) => {
+  // 1. Lidar com preflight CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -16,39 +22,59 @@ const corsHeaders = {
     const SUPABASE_URL = (Deno as any).env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = (Deno as any).env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+    if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      log("Erro: Variáveis de ambiente não configuradas.");
+      return new Response("Config Error", { status: 500 });
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Logs iniciais para depuração
-    const body = await req.json().catch(() => ({}));
+    // 2. Tentar ler o corpo da requisição de forma segura
+    const rawBody = await req.text();
+    log("Payload bruto recebido:", rawBody);
+    
+    let body: any = {};
+    try {
+      body = JSON.parse(rawBody);
+    } catch (e) {
+      log("Aviso: Falha ao parsear JSON do body, tentando query params.");
+    }
+
     const url = new URL(req.url);
     
+    // Mercado Pago envia o ID do recurso de várias formas dependendo da versão/evento
+    const dataId = body.data?.id || body.id || url.searchParams.get('data.id') || url.searchParams.get('id');
     const type = body.type || body.action || url.searchParams.get('type') || url.searchParams.get('topic');
-    const dataId = body.data?.id || url.searchParams.get('id') || url.searchParams.get('data.id');
 
-    console.log(`[MP-WEBHOOK] Notificação recebida: type=${type}, dataId=${dataId}`);
+    log(`Processando: Evento=${type}, RecursoID=${dataId}`);
 
+    // Só processamos se o tipo for pagamento
     if ((type === 'payment' || type?.includes('payment')) && dataId) {
-      console.log(`[MP-WEBHOOK] Validando pagamento ${dataId} via API Mercado Pago...`);
+      log(`Consultando status real do pagamento ${dataId} na API do Mercado Pago...`);
       
       const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${dataId}`, {
-        headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
+        headers: { 
+          'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
       });
       
       if (!mpRes.ok) {
-        console.error(`[MP-WEBHOOK] Erro ao consultar MP: ${mpRes.status}`);
-        return new Response("Error MP API", { status: 200 }); // Retornar 200 para o MP parar de tentar
+        log(`Erro ao consultar API do MP (Status: ${mpRes.status})`);
+        // Retornamos 200 para o MP não ficar reenviando se for um erro de ID inválido (ex: teste antigo)
+        return new Response("MP API Error", { status: 200 });
       }
 
       const paymentData = await mpRes.json();
       const status = paymentData.status;
       const userId = paymentData.external_reference;
 
-      console.log(`[MP-WEBHOOK] Pagamento ${dataId} está com status: ${status} para o User: ${userId}`);
+      log(`Dados do Pagamento no MP: ID=${dataId}, Status=${status}, UserID=${userId}`);
 
       if (status === 'approved' && userId) {
-        console.log(`[MP-WEBHOOK] APROVADO! Atualizando banco para o usuário ${userId}...`);
+        log(`PAGAMENTO APROVADO! Atualizando perfil do usuário ${userId}...`);
 
-        const { data, error } = await supabase
+        const { data: updatedProfile, error: dbError } = await supabase
           .from('profiles')
           .update({ 
             is_pro: true, 
@@ -57,22 +83,28 @@ const corsHeaders = {
           .eq('id', userId)
           .select();
 
-        if (error) {
-          console.error("[MP-WEBHOOK] Erro ao atualizar perfil no Supabase:", error.message);
+        if (dbError) {
+          log("Erro ao atualizar banco de dados:", dbError.message);
           return new Response("DB Error", { status: 200 });
         }
         
-        console.log("[MP-WEBHOOK] SUCESSO! Perfil atualizado para PRO.", JSON.stringify(data));
+        log("SUCESSO: Perfil atualizado com sucesso!", updatedProfile);
+      } else {
+        log(`Pagamento ignorado: Status é ${status} (UserID: ${userId})`);
       }
+    } else {
+      log("Evento ignorado (não é um pagamento ou ID ausente).");
     }
 
-    return new Response(JSON.stringify({ success: true }), { 
+    // Sempre retornar 200 ou 201 para o Mercado Pago dar baixa no Webhook
+    return new Response(JSON.stringify({ received: true }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200 
     });
 
   } catch (error: any) {
-    console.error("[MP-WEBHOOK] Exceção crítica:", error.message);
+    log("Exceção Crítica no Webhook:", error.message);
+    // Retornamos 200 para evitar loop de retentativas do MP se for um erro lógico interno
     return new Response(error.message, { status: 200 });
   }
 })
