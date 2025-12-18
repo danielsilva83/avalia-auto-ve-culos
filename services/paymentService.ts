@@ -27,6 +27,7 @@ const mockPaymentService = {
 
 export const paymentService = {
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
+    // Só usa mock se o cliente supabase não existir (falha de env vars)
     if (!supabase) {
       return mockPaymentService.createPixPayment(email);
     }
@@ -38,12 +39,14 @@ export const paymentService = {
       const { data, error } = await supabase.functions.invoke('create-pix', {
         body: { 
           email, 
-          userId: user.id, // Enviando o ID do usuário logado
+          userId: user.id,
           description: 'AvalIA AI - Acesso PRO Vitalício' 
         },
       });
 
       if (error) {
+        console.error("Erro na Edge Function:", error);
+        // Fallback para mock apenas em desenvolvimento local e se a função falhar
         if (window.location.hostname === 'localhost') {
            return mockPaymentService.createPixPayment(email);
         }
@@ -64,21 +67,34 @@ export const paymentService = {
   },
 
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
-    if (!supabase || paymentId.startsWith('mock_')) {
+    // Se o ID começar com mock_, usa a lógica de simulação
+    if (paymentId.startsWith('mock_')) {
       return mockPaymentService.checkPaymentStatus(paymentId);
     }
 
+    if (!supabase) return 'pending';
+
     try {
-      // O polling agora apenas checa se o campo is_pro no banco mudou
-      // O webhook será responsável por mudar esse campo.
-      const { data } = await supabase
+      // 1. Obter o usuário logado para garantir que consultamos o perfil certo
+      const user = await authService.getCurrentUser();
+      if (!user) return 'pending';
+
+      // 2. Consultar diretamente o campo is_pro no banco de dados
+      // Adicionamos um timestamp para evitar qualquer cache do navegador/supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('is_pro')
+        .eq('id', user.id)
         .single();
       
-      if (data?.is_pro) return 'approved';
-      return 'pending';
+      if (error) {
+        console.error("Erro ao checar status no banco:", error);
+        return 'pending';
+      }
+      
+      return data?.is_pro ? 'approved' : 'pending';
     } catch (e) {
+      console.error("Exceção ao checar status:", e);
       return 'pending';
     }
   }

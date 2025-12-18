@@ -17,7 +17,6 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const isInitializing = useRef(true);
 
-  // Função para sincronizar sessão com tratamento de erro global
   const syncUserSession = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
@@ -38,24 +37,18 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // 1. Timeout de segurança: Se em 6 segundos ainda estiver carregando, força Login.
     const safetyTimeout = setTimeout(() => {
       if (appState === AppState.LOADING && isInitializing.current) {
-        console.warn("Auth initialization timed out. Forcing login screen.");
         setAppState(AppState.LOGIN);
         isInitializing.current = false;
       }
     }, 6000);
 
-    // 2. Tenta recuperar sessão inicial
     syncUserSession();
 
-    // 3. Ouve mudanças de estado (Login/Logout)
     let subscription: any = null;
     if (supabase) {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log(`Supabase Auth Event: ${event}`);
-        
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           await syncUserSession();
         } else if (event === 'SIGNED_OUT') {
@@ -76,9 +69,7 @@ const App: React.FC = () => {
     setError(null);
     try {
       await authService.login(); 
-      // O fluxo continuará via onAuthStateChange
     } catch (e: any) {
-      console.error("Login failed", e);
       setError(e.message || "Falha ao iniciar login.");
     }
   };
@@ -97,16 +88,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpgrade = async () => {
-    if (!user) return;
-    try {
-      const upgradedUser = await authService.upgradeToPro(user);
-      setUser(upgradedUser);
-      setAppState(AppState.FORM);
-    } catch (e) {
-      console.error("Upgrade failed", e);
-      alert("Erro ao processar pagamento. Tente novamente.");
+  const handleUpgradeSuccess = async () => {
+    // Recarrega o usuário do banco para garantir que temos os dados atualizados pelo Webhook
+    const updatedUser = await authService.getCurrentUser();
+    if (updatedUser) {
+      setUser(updatedUser);
     }
+    setAppState(AppState.FORM);
   };
 
   const handleFormSubmit = async (data: VehicleFormData) => {
@@ -129,7 +117,6 @@ const App: React.FC = () => {
       setResult(response);
       setAppState(AppState.RESULT);
     } catch (err: any) {
-      console.error(err);
       setError(err.message || "Ocorreu um erro ao analisar o veículo.");
       setAppState(AppState.ERROR);
     }
@@ -141,7 +128,6 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  // Splash Screen de Autenticação (Apenas se não tiver usuário E estiver carregando)
   if (appState === AppState.LOADING && !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
@@ -198,7 +184,7 @@ const App: React.FC = () => {
 
       <main className="max-w-md mx-auto px-4 py-8 relative">
         {appState === AppState.PRICING && (
-          <PricingModal onUpgrade={handleUpgrade} onClose={() => setAppState(AppState.FORM)} />
+          <PricingModal onUpgrade={handleUpgradeSuccess} onClose={() => setAppState(AppState.FORM)} />
         )}
 
         {appState === AppState.FORM && user && (
