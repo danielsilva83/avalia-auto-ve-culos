@@ -64,7 +64,6 @@ const parseResponse = (text: string): AnalysisResponse => {
 };
 
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
-  // Corrected: Always use the process.env.API_KEY directly in the constructor as per guidelines.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const transactionContext = data.transactionType === 'compra' ? 'COMPRA (Avaliação para pagar)' : 'VENDA (Preço para anunciar)';
@@ -81,6 +80,10 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
     data.singleOwner ? 'Único Dono' : null
   ].filter(Boolean).join(', ');
 
+  const priceInfo = data.price > 0 
+    ? `R$ ${data.price.toLocaleString('pt-BR')}` 
+    : 'NÃO INFORMADO (Sugira o valor ideal baseado inteiramente no mercado)';
+
   const prompt = `
     Analise o seguinte veículo para fins de **${transactionContext}**:
     
@@ -92,7 +95,7 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
     - Cor: ${data.color}
     - Estado de Conservação: ${data.condition}
     - Diferenciais/Opcionais: ${amenities}
-    - Preço ${data.transactionType === 'venda' ? 'Desejado pelo Dono' : 'Oferecido'}: R$ ${data.price.toLocaleString('pt-BR')}
+    - Preço ${data.transactionType === 'venda' ? 'Desejado pelo Dono' : 'Oferecido'}: ${priceInfo}
 
     Utilize o Google Search para encontrar:
     1. O valor atualizado na Tabela FIPE para este modelo e ano.
@@ -150,7 +153,6 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
   `;
 
   try {
-    // Corrected: Use 'gemini-3-flash-preview' for basic text tasks with Search Grounding as per guidelines.
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview", 
       contents: prompt,
@@ -161,31 +163,20 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
       },
     });
 
-    // Verificação Robusta de Resposta
     if (!response || !response.candidates || response.candidates.length === 0) {
-      console.error("Gemini retornou resposta vazia (sem candidates).", response);
       throw new Error("A IA não conseguiu processar sua solicitação. Tente novamente.");
     }
 
     const candidate = response.candidates[0];
-
-    // Verifica bloqueios de segurança
     if (candidate.finishReason !== "STOP" && !response.text) {
-      console.error("Gemini bloqueado ou erro.", {
-         finishReason: candidate.finishReason,
-         safetyRatings: candidate.safetyRatings
-      });
       throw new Error(`A análise foi interrompida pela IA. Motivo: ${candidate.finishReason}`);
     }
 
-    // Corrected: response.text is a property, not a method.
     const text = response.text;
     if (!text) {
-      console.error("Texto da resposta indefinido.", JSON.stringify(response, null, 2));
       throw new Error("A IA retornou dados incompletos. Por favor, tente novamente.");
     }
 
-    // Corrected: Extract grounding URLs from groundingChunks to comply with "MUST ALWAYS" rule for Google Search tools.
     const groundingUrls = candidate.groundingMetadata?.groundingChunks
       ?.map((chunk: any) => ({
         title: chunk.web?.title || chunk.web?.uri || "Fonte",
