@@ -5,7 +5,7 @@ import { PixPaymentResponse } from "../types";
 
 const mockPaymentService = {
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    console.log("Modo Mock ativado para:", email);
+    console.log("[MOCK] Criando pagamento simulado para:", email);
     await new Promise(r => setTimeout(r, 1500));
     localStorage.setItem('mock_payment_start', Date.now().toString());
 
@@ -27,14 +27,13 @@ const mockPaymentService = {
 
 export const paymentService = {
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    if (!supabase) {
-      return mockPaymentService.createPixPayment(email);
-    }
+    if (!supabase) return mockPaymentService.createPixPayment(email);
 
     try {
       const user = await authService.getCurrentUser();
       if (!user) throw new Error("Usuário não identificado.");
 
+      console.log("[PaymentService] Chamando Edge Function create-pix...");
       const { data, error } = await supabase.functions.invoke('create-pix', {
         body: { 
           email, 
@@ -44,27 +43,27 @@ export const paymentService = {
       });
 
       if (error) {
-        console.error("Erro na Edge Function create-pix:", error);
-        if (window.location.hostname === 'localhost') {
-           return mockPaymentService.createPixPayment(email);
-        }
+        console.error("[PaymentService] Erro na Edge Function:", error);
+        if (window.location.hostname === 'localhost') return mockPaymentService.createPixPayment(email);
         throw error;
       }
 
+      console.log("[PaymentService] Pix gerado com sucesso. ID:", data.id);
       return {
         paymentId: data.id.toString(),
-        qrCodeBase64: data.point_of_interaction.transaction_data.qr_code_base64,
-        copyPasteCode: data.point_of_interaction.transaction_data.qr_code,
+        qrCodeBase64: data.point_of_interaction?.transaction_data?.qr_code_base64 || "",
+        copyPasteCode: data.point_of_interaction?.transaction_data?.qr_code || "",
         status: data.status,
-        ticketUrl: data.point_of_interaction.transaction_data.ticket_url
+        ticketUrl: data.point_of_interaction?.transaction_data?.ticket_url
       };
     } catch (e: any) {
-      console.error("Erro ao gerar PIX:", e.message);
+      console.error("[PaymentService] Exceção ao gerar PIX:", e.message);
       throw e;
     }
   },
 
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
+    // 1. Se for mock, usa a lógica de tempo
     if (paymentId.startsWith('mock_')) {
       return mockPaymentService.checkPaymentStatus(paymentId);
     }
@@ -72,30 +71,34 @@ export const paymentService = {
     if (!supabase) return 'pending';
 
     try {
-      const user = await authService.getCurrentUser();
+      // 2. Pegar o ID do usuário atual para checar o perfil dele
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn("[checkPaymentStatus] Nenhum usuário logado para checar status.");
+        console.warn("[checkPaymentStatus] Sem sessão de usuário ativa.");
         return 'pending';
       }
 
-      // Consulta sem cache para garantir dado real
+      console.log(`[checkPaymentStatus] Verificando DB para user: ${user.id} (Payment: ${paymentId})`);
+
+      // 3. Consultar o banco de dados diretamente
+      // Usamos uma consulta simples para verificar se o Webhook já atualizou o is_pro
       const { data, error } = await supabase
         .from('profiles')
         .select('is_pro')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
       
       if (error) {
-        console.error("[checkPaymentStatus] Erro ao consultar banco:", error);
+        console.error("[checkPaymentStatus] Erro na consulta ao banco:", error.message);
         return 'pending';
       }
       
-      const isPro = !!data?.is_pro;
-      console.log(`[checkPaymentStatus] Usuário ${user.id} - isPro no banco:`, isPro);
+      console.log("[checkPaymentStatus] Resultado do banco - is_pro:", data?.is_pro);
       
-      return isPro ? 'approved' : 'pending';
-    } catch (e) {
-      console.error("[checkPaymentStatus] Exceção:", e);
+      // Se is_pro for true, o pagamento foi aprovado e processado pelo Webhook
+      return data?.is_pro ? 'approved' : 'pending';
+    } catch (e: any) {
+      console.error("[checkPaymentStatus] Exceção inesperada:", e.message);
       return 'pending';
     }
   }
