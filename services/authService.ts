@@ -17,41 +17,39 @@ export const authService = {
     await supabase.auth.signOut();
   },
 
+  getProfile: async (authUser: any): Promise<User> => {
+    if (!supabase) throw new Error("Supabase offline");
+    
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    if (error || !profile) {
+      return {
+        id: authUser.id,
+        name: authUser.user_metadata.full_name || 'Usuário',
+        email: authUser.email || '',
+        isPro: false,
+        credits: 2 // Créditos de experiência para novos usuários
+      };
+    }
+
+    return {
+      id: profile.id,
+      name: profile.full_name,
+      email: profile.email,
+      isPro: profile.is_pro,
+      credits: profile.credits
+    };
+  },
+
   getCurrentUser: async (): Promise<User | null> => {
     if (!supabase) return null;
-
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return null;
-
-      // Busca dados frescos do banco (importante para detectar virada de chave PRO)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profileError || !profile) {
-        return {
-          id: user.id,
-          name: user.user_metadata.full_name || 'Usuário',
-          email: user.email || '',
-          isPro: false,
-          credits: 0
-        };
-      }
-
-      return {
-        id: profile.id,
-        name: profile.full_name,
-        email: profile.email,
-        isPro: profile.is_pro,
-        credits: profile.credits
-      };
-    } catch (e) {
-      console.error("Erro no authService.getCurrentUser:", e);
-      return null;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    return authService.getProfile(user);
   },
 
   consumeCredit: async (user: User): Promise<User | null> => {
