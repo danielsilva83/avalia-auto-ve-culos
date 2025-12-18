@@ -35,7 +35,11 @@ const parseResponse = (text: string): AnalysisResponse => {
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const transactionContext = data.transactionType === 'compra' ? 'COMPRA' : 'VENDA';
-  const priceInfo = data.price > 0 ? `R$ ${data.price.toLocaleString('pt-BR')}` : 'NÃO INFORMADO (Sugira o valor ideal)';
+  
+  // Format price info: if 0, treat as not informed
+  const priceInfo = data.price > 0 
+    ? `R$ ${data.price.toLocaleString('pt-BR')}` 
+    : 'NÃO INFORMADO (Sugira o valor ideal baseado inteiramente no mercado atual)';
 
   const prompt = `
     Analise para ${transactionContext}:
@@ -43,15 +47,18 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
     - Ano: ${data.year}
     - KM: ${data.mileage}
     - Conservação: ${data.condition}
+    - Combustível: ${data.fuel}
+    - Cor: ${data.color}
+    - Diferenciais: ${data.singleOwner ? 'Único Dono, ' : ''}${data.hasServiceHistory ? 'Revisado, ' : ''}${data.hasLeather ? 'Couro, ' : ''}${data.hasSunroof ? 'Teto Solar' : ''}
     - Preço Base: ${priceInfo}
     Use googleSearch para FIPE e Mercado Real atual.
   `;
 
   const systemInstruction = `
     Você é o AvalIA AI Automóveis. Forneça análise FIPE x Mercado Real em 4 seções:
-    [[SEÇÃO 1]] Análise Markdown direta com emojis.
-    [[SEÇÃO 2]] Scripts de negociação.
-    [[SEÇÃO 3]] Pílula técnica curta.
+    [[SEÇÃO 1]] Análise Markdown direta com emojis. Inclua a Tabela FIPE estimada e preços de anúncios reais encontrados.
+    [[SEÇÃO 2]] Scripts de negociação curtos e persuasivos.
+    [[SEÇÃO 3]] Pílula técnica curta sobre o modelo (liquidez ou problemas crônicos).
     [[SEÇÃO 4]] JSON: { "resumo_veiculo": "", "faixa_preco_sugerida": "", "nivel_dificuldade_venda": "", "tags_sugeridas": [] }
   `;
 
@@ -61,7 +68,12 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
     config: { systemInstruction, tools: [{ googleSearch: {} }] },
   });
 
-  const candidate = response.candidates[0];
+  const candidates = response.candidates;
+  if (!candidates || candidates.length === 0) {
+    throw new Error("Nenhum resultado retornado pela IA.");
+  }
+
+  const candidate = candidates[0];
   const groundingUrls = candidate.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
     title: chunk.web?.title || "Fonte", uri: chunk.web?.uri
   })).filter((item: any) => item.uri);

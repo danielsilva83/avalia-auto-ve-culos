@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { VehicleFormData } from '../types';
 import { 
   Car, Calendar, Gauge, Fuel, DollarSign, 
-  Settings2, Tag, ShieldCheck, CheckCircle2,
-  Disc, Sun, Radio, Armchair
+  Settings2, Tag
 } from 'lucide-react';
 
 interface VehicleFormProps {
@@ -173,10 +172,10 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
             name="price"
             min="0"
             inputMode="numeric"
-            placeholder="Não informado"
+            placeholder="Deixe em branco p/ sugerirmos"
             value={formData.price || ''}
             onChange={handleChange}
-            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-bold"
+            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-bold placeholder:font-normal placeholder:text-gray-400"
           />
         </div>
 
