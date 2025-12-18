@@ -18,31 +18,40 @@ export const authService = {
   },
 
   getProfile: async (authUser: any): Promise<User> => {
-    if (!supabase) throw new Error("Supabase offline");
-    
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .maybeSingle();
-
-    if (error || !profile) {
-      return {
-        id: authUser.id,
-        name: authUser.user_metadata.full_name || 'Usuário',
-        email: authUser.email || '',
-        isPro: false,
-        credits: 2 // Créditos de experiência para novos usuários
-      };
-    }
-
-    return {
-      id: profile.id,
-      name: profile.full_name,
-      email: profile.email,
-      isPro: profile.is_pro,
-      credits: profile.credits
+    const fallbackUser: User = {
+      id: authUser.id,
+      name: authUser.user_metadata?.full_name || 'Usuário',
+      email: authUser.email || '',
+      isPro: false,
+      credits: 2
     };
+
+    if (!supabase) return fallbackUser;
+    
+    try {
+      // Usamos um timeout na busca do perfil se possível, ou apenas garantimos o try/catch
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      if (error || !profile) {
+        console.warn("Perfil não encontrado ou erro no banco. Usando fallback.");
+        return fallbackUser;
+      }
+
+      return {
+        id: profile.id,
+        name: profile.full_name || fallbackUser.name,
+        email: profile.email || fallbackUser.email,
+        isPro: !!profile.is_pro,
+        credits: typeof profile.credits === 'number' ? profile.credits : 0
+      };
+    } catch (e) {
+      console.error("Erro crítico ao buscar perfil:", e);
+      return fallbackUser;
+    }
   },
 
   getCurrentUser: async (): Promise<User | null> => {
@@ -57,14 +66,18 @@ export const authService = {
     if (user.isPro) return user;
     
     if (user.credits > 0) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ credits: user.credits - 1 })
-        .eq('id', user.id)
-        .select().single();
-        
-      if (error) return null;
-      return { ...user, credits: data.credits };
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({ credits: user.credits - 1 })
+          .eq('id', user.id)
+          .select().single();
+          
+        if (error) return null;
+        return { ...user, credits: data.credits };
+      } catch (e) {
+        return null;
+      }
     }
     return null;
   }

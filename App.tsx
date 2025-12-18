@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VehicleForm from './components/PropertyForm'; 
 import AnalysisResult from './components/AnalysisResult';
 import LoginScreen from './components/LoginScreen';
@@ -15,54 +15,67 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const authInitialized = useRef(false);
 
   useEffect(() => {
     const client = supabase;
+    
+    // Se o Supabase não estiver configurado, vai direto para o Login (que mostrará erro se tentar logar)
     if (!client) {
       setAppState(AppState.LOGIN);
       return;
     }
 
-    // Gerencia a sessão de forma reativa
+    // Timeout de Segurança: Se em 3 segundos nada acontecer, força a tela de Login
+    const safetyTimeout = setTimeout(() => {
+      if (!authInitialized.current) {
+        console.warn("Auth initialization timed out. Forcing login screen.");
+        setAppState(AppState.LOGIN);
+      }
+    }, 3500);
+
+    // Listener de estado de autenticação (única fonte de verdade para o estado do usuário)
     const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth Event:", event);
+      console.log("Supabase Auth Event:", event);
+      
       if (session?.user) {
         try {
           const profile = await authService.getProfile(session.user);
           setUser(profile);
+          authInitialized.current = true;
           setAppState(AppState.FORM);
         } catch (e) {
-          console.error("Erro ao carregar perfil:", e);
+          console.error("Erro ao carregar perfil no listener:", e);
           setAppState(AppState.LOGIN);
         }
       } else {
         setUser(null);
+        authInitialized.current = true;
         setAppState(AppState.LOGIN);
       }
     });
 
-    // Verificação inicial de sessão
-    const checkSession = async () => {
+    // Verificação inicial manual caso o listener demore a disparar
+    const checkInitialSession = async () => {
       try {
         const { data: { session } } = await client.auth.getSession();
-        if (session?.user) {
+        if (session?.user && !authInitialized.current) {
           const profile = await authService.getProfile(session.user);
           setUser(profile);
+          authInitialized.current = true;
           setAppState(AppState.FORM);
-        } else {
-          // Pequeno delay para permitir que o onAuthStateChange capture o evento de retorno do OAuth
-          setTimeout(() => {
-            setAppState(prev => prev === AppState.LOADING ? AppState.LOGIN : prev);
-          }, 1000);
         }
       } catch (err) {
-        console.error("Session check error:", err);
-        setAppState(AppState.LOGIN);
+        console.error("Initial session check error:", err);
       }
     };
-    checkSession();
+    
+    checkInitialSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const handleLogin = async () => {
