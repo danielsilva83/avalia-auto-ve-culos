@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { AnalysisResponse } from '../types';
 import { Share2, Copy, BrainCircuit, ArrowLeft, MessageSquareQuote, ExternalLink } from 'lucide-react';
 
@@ -8,6 +9,8 @@ interface AnalysisResultProps {
 }
 
 const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, onReset }) => {
+  const [copiedCrm, setCopiedCrm] = useState(false);
+
   // Helper to format text for WhatsApp
   const generateWhatsAppText = () => {
     const text = `*AvalIA AI - Análise de Mercado* 📊\n\n` +
@@ -20,7 +23,8 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, onReset }) => {
   const copyCrmData = () => {
     const jsonString = JSON.stringify(data.crmData, null, 2);
     navigator.clipboard.writeText(jsonString);
-    alert("Dados do CRM copiados!");
+    setCopiedCrm(true);
+    setTimeout(() => setCopiedCrm(false), 2000);
   };
 
   return (
@@ -45,34 +49,31 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, onReset }) => {
         </div>
         <div className="p-6 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
           {data.priceAnalysis}
+          
+          {/* Extracting and listing URLs from grounding metadata as required by the guidelines */}
+          {data.groundingUrls && data.groundingUrls.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Fontes de Pesquisa:</p>
+              <div className="space-y-2">
+                {data.groundingUrls.map((link, idx) => (
+                  <a 
+                    key={idx}
+                    href={link.uri} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
+                  >
+                    <ExternalLink className="w-3 h-3 text-blue-500" />
+                    <span className="text-[11px] text-gray-600 truncate group-hover:text-blue-600">
+                      {link.title}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* SECTION 5: Fontes de Pesquisa (Required by Gemini Search Grounding Guidelines) */}
-      {data.groundingUrls && data.groundingUrls.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="bg-gray-50 px-6 py-3 border-b border-gray-100">
-            <h3 className="text-gray-800 font-semibold flex items-center gap-2">
-              <ExternalLink className="w-5 h-5 text-blue-600" />
-              Fontes Consultadas
-            </h3>
-          </div>
-          <div className="p-4 space-y-2">
-            {data.groundingUrls.map((source, idx) => (
-              <a 
-                key={idx}
-                href={source.uri}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 text-sm text-blue-600 hover:bg-blue-50 transition-colors group"
-              >
-                <span className="truncate pr-4">{source.title}</span>
-                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* SECTION 2: Argumentos (Scripts) */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -119,10 +120,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, onReset }) => {
           
           <button
             onClick={copyCrmData}
-            className="flex-1 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all border bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            className={`flex-1 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all border ${
+              copiedCrm 
+                ? 'bg-gray-800 text-white border-gray-800' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
             <Copy className="w-5 h-5" />
-            CRM Data
+            {copiedCrm ? 'Copiado!' : 'CRM Data'}
           </button>
         </div>
       </div>
