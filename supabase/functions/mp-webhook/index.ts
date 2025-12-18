@@ -16,48 +16,75 @@ const corsHeaders = {
     const SUPABASE_URL = (Deno as any).env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = (Deno as any).env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    // Inicializa Supabase com Service Role para poder editar o perfil sem restrições de RLS
+    if (!MP_ACCESS_TOKEN || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("[Webhook Error] Variáveis de ambiente faltando.");
+      return new Response("Config Error", { status: 500 });
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // 1. Tentar ler o corpo da requisição para logs e processamento
+    const body = await req.json().catch(() => ({}));
     const url = new URL(req.url);
-    const type = url.searchParams.get('type') || (await req.json().catch(() => ({}))).type;
-    const dataId = url.searchParams.get('data.id') || (await req.json().catch(() => ({}))).data?.id;
+    
+    // Mercado Pago pode enviar dados via query params ou body (depende da versão do Webhook)
+    const type = body.type || body.action || url.searchParams.get('type') || url.searchParams.get('topic');
+    const dataId = body.data?.id || url.searchParams.get('id') || url.searchParams.get('data.id');
 
-    console.log(`[Webhook] Recebido tipo: ${type}, ID: ${dataId}`);
+    console.log(`[Webhook Received] Payload:`, JSON.stringify({ type, dataId, body }));
 
-    // Somente processamos notificações de pagamento
-    if (type === 'payment' && dataId) {
-      // 1. Validar o status do pagamento diretamente na API do Mercado Pago (Segurança)
+    // 2. Filtrar apenas notificações de pagamento aprovado ou criado
+    // O MP envia 'payment' ou 'payment.created' / 'payment.updated'
+    if ((type === 'payment' || type?.includes('payment')) && dataId) {
+      console.log(`[Webhook] Consultando pagamento ${dataId} no Mercado Pago...`);
+      
       const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${dataId}`, {
         headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
       });
       
+      if (!mpRes.ok) {
+        console.error(`[Webhook Error] Falha ao consultar MP: ${mpRes.status}`);
+        return new Response("MP API Error", { status: mpRes.status });
+      }
+
       const paymentData = await mpRes.json();
+      console.log(`[Webhook] Status do pagamento ${dataId}: ${paymentData.status}`);
 
       if (paymentData.status === 'approved') {
         const userId = paymentData.external_reference;
-        console.log(`[Webhook] Pagamento APROVADO para o usuário: ${userId}`);
+        
+        if (!userId) {
+          console.error(`[Webhook Error] Pagamento aprovado mas 'external_reference' (userId) está vazio! ID: ${dataId}`);
+          return new Response("No user reference", { status: 200 }); // Retornamos 200 para o MP não repetir
+        }
 
-        // 2. Atualizar o perfil do usuário no Supabase
-        const { error } = await supabase
+        console.log(`[Webhook] Ativando PRO para usuário: ${userId}`);
+
+        // 3. Atualizar o banco de dados
+        const { data: updateData, error: updateError } = await supabase
           .from('profiles')
           .update({ 
             is_pro: true, 
             credits: 9999 
           })
-          .eq('id', userId);
+          .eq('id', userId)
+          .select();
 
-        if (error) {
-          console.error("[Webhook] Erro ao atualizar perfil:", error);
-          return new Response("Erro ao atualizar banco", { status: 500 });
+        if (updateError) {
+          console.error("[Webhook Error] Erro ao atualizar profiles:", updateError);
+          return new Response("DB Update Error", { status: 500 });
         }
         
-        console.log("[Webhook] Usuário promovido a PRO com sucesso.");
+        console.log(`[Webhook Success] Perfil atualizado para ${userId}. Resultado:`, JSON.stringify(updateData));
+      } else {
+        console.log(`[Webhook] Pagamento ${dataId} ignorado (status: ${paymentData.status})`);
       }
+    } else {
+      console.log(`[Webhook] Notificação ignorada (tipo irrelevante ou sem ID): ${type}`);
     }
 
-    // O Mercado Pago exige resposta 200 ou 201 para não reenviar a notificação
-    return new Response(JSON.stringify({ received: true }), { 
+    // Sempre retornar 200 ou 201 para o Mercado Pago
+    return new Response(JSON.stringify({ success: true }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200 
     });

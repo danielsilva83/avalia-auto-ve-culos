@@ -27,7 +27,6 @@ const mockPaymentService = {
 
 export const paymentService = {
   createPixPayment: async (email: string): Promise<PixPaymentResponse> => {
-    // Só usa mock se o cliente supabase não existir (falha de env vars)
     if (!supabase) {
       return mockPaymentService.createPixPayment(email);
     }
@@ -45,8 +44,7 @@ export const paymentService = {
       });
 
       if (error) {
-        console.error("Erro na Edge Function:", error);
-        // Fallback para mock apenas em desenvolvimento local e se a função falhar
+        console.error("Erro na Edge Function create-pix:", error);
         if (window.location.hostname === 'localhost') {
            return mockPaymentService.createPixPayment(email);
         }
@@ -67,7 +65,6 @@ export const paymentService = {
   },
 
   checkPaymentStatus: async (paymentId: string): Promise<string> => {
-    // Se o ID começar com mock_, usa a lógica de simulação
     if (paymentId.startsWith('mock_')) {
       return mockPaymentService.checkPaymentStatus(paymentId);
     }
@@ -75,26 +72,30 @@ export const paymentService = {
     if (!supabase) return 'pending';
 
     try {
-      // 1. Obter o usuário logado para garantir que consultamos o perfil certo
       const user = await authService.getCurrentUser();
-      if (!user) return 'pending';
+      if (!user) {
+        console.warn("[checkPaymentStatus] Nenhum usuário logado para checar status.");
+        return 'pending';
+      }
 
-      // 2. Consultar diretamente o campo is_pro no banco de dados
-      // Adicionamos um timestamp para evitar qualquer cache do navegador/supabase
+      // Consulta sem cache para garantir dado real
       const { data, error } = await supabase
         .from('profiles')
         .select('is_pro')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
-        console.error("Erro ao checar status no banco:", error);
+        console.error("[checkPaymentStatus] Erro ao consultar banco:", error);
         return 'pending';
       }
       
-      return data?.is_pro ? 'approved' : 'pending';
+      const isPro = !!data?.is_pro;
+      console.log(`[checkPaymentStatus] Usuário ${user.id} - isPro no banco:`, isPro);
+      
+      return isPro ? 'approved' : 'pending';
     } catch (e) {
-      console.error("Exceção ao checar status:", e);
+      console.error("[checkPaymentStatus] Exceção:", e);
       return 'pending';
     }
   }
