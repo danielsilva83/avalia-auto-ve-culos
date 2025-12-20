@@ -23,6 +23,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
     color: '',
     condition: 'Bom',
     price: 0,
+    uf: '',
     isArmored: false,
     hasLeather: false,
     hasSunroof: false,
