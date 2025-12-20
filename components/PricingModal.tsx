@@ -21,13 +21,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
   const [copyPaste, setCopyPaste] = useState<string>('');
   const [paymentId, setPaymentId] = useState<string | null>(null);
   
-  // Using number instead of NodeJS.Timeout for browser environment compatibility
-  const pollingInterval = useRef<number | null>(null);
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Timer Regressivo visual
   useEffect(() => {
-    // Using any or number instead of NodeJS.Timeout for browser environment compatibility
-    let interval: any;
+    let interval: NodeJS.Timeout;
     
     if (step === 'pix') {
       interval = setInterval(() => {
@@ -48,8 +46,6 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
   // Polling de Status
   useEffect(() => {
     if (step === 'pix' && paymentId) {
-      // In the browser, setInterval returns a number. 
-      // We cast to any/number to satisfy TypeScript in environments where NodeJS types might conflict.
       pollingInterval.current = setInterval(async () => {
         try {
           const status = await paymentService.checkPaymentStatus(paymentId);
@@ -65,7 +61,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
         } catch (e) {
           console.error("Erro no polling", e);
         }
-      }, 5000) as unknown as number;
+      }, 5000); // Checa a cada 5s
     }
 
     return () => {
