@@ -180,7 +180,7 @@ const App: React.FC = () => {
                 {user.isPro ? (
                   <><Star className="w-3 h-3 fill-current" /> PRO</>
                 ) : (
-                  <>{user.credits} CRÉDITOS p/ AVALIAÇÕES - ATIVE AQUI VERSÃO PRÓ</>
+                  <>{user.credits} CRÉDITOS - ATIVE PRÓ</>
                 )}
               </div>
 
