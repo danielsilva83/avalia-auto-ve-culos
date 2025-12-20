@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [selectedUf, setSelectedUf] = useState<string>(localStorage.getItem('avalia_uf') || 'SP');
   const isInitializing = useRef(true);
 
   const syncUserSession = useCallback(async () => {
@@ -65,9 +66,11 @@ const App: React.FC = () => {
     };
   }, [syncUserSession]);
 
-  const handleLogin = async () => {
+  const handleLogin = async (uf: string) => {
     setError(null);
     try {
+      setSelectedUf(uf);
+      localStorage.setItem('avalia_uf', uf);
       await authService.login(); 
     } catch (e: any) {
       setError(e.message || "Falha ao iniciar login.");
@@ -89,7 +92,6 @@ const App: React.FC = () => {
   };
 
   const handleUpgradeSuccess = async () => {
-    // Recarrega o usuário do banco para garantir que temos os dados atualizados pelo Webhook
     const updatedUser = await authService.getCurrentUser();
     if (updatedUser) {
       setUser(updatedUser);
@@ -112,6 +114,10 @@ const App: React.FC = () => {
       setUser(userWithCredits);
       setAppState(AppState.LOADING);
       setError(null);
+
+      // Atualiza UF no localStorage se o usuário mudou no form
+      localStorage.setItem('avalia_uf', data.uf);
+      setSelectedUf(data.uf);
 
       const response = await analyzeVehicle(data);
       setResult(response);
@@ -195,15 +201,15 @@ const App: React.FC = () => {
                 {user.isPro ? "Acesso PRO liberado." : `Você tem ${user.credits} avaliações gratuitas.`}
               </p>
             </div>
-            <VehicleForm onSubmit={handleFormSubmit} isLoading={false} />
+            <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
           </div>
         )}
 
         {appState === AppState.LOADING && user && (
            <div className="flex flex-col items-center justify-center pt-20 space-y-4">
               <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-              <h3 className="text-lg font-medium text-gray-600">Analisando Mercado...</h3>
-              <p className="text-sm text-gray-400 text-center max-w-xs">Comparando FIPE e anúncios ativos.</p>
+              <h3 className="text-lg font-medium text-gray-600">Analisando Mercado em {selectedUf}...</h3>
+              <p className="text-sm text-gray-400 text-center max-w-xs">Buscando as melhores ofertas da sua região.</p>
            </div>
         )}
 

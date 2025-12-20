@@ -1,18 +1,32 @@
+
 import React, { useState } from 'react';
-import { Car, CheckCircle2, TrendingUp, ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
+import { Car, CheckCircle2, TrendingUp, ShieldCheck, AlertCircle, MapPin } from 'lucide-react';
 
 interface LoginScreenProps {
-  onLogin: () => Promise<void>;
+  onLogin: (uf: string) => Promise<void>;
   error?: string | null;
 }
 
+const BRAZIL_STATES = [
+  { uf: 'AC', name: 'Acre' }, { uf: 'AL', name: 'Alagoas' }, { uf: 'AP', name: 'Amapá' },
+  { uf: 'AM', name: 'Amazonas' }, { uf: 'BA', name: 'Bahia' }, { uf: 'CE', name: 'Ceará' },
+  { uf: 'DF', name: 'Distrito Federal' }, { uf: 'ES', name: 'Espírito Santo' }, { uf: 'GO', name: 'Goiás' },
+  { uf: 'MA', name: 'Maranhão' }, { uf: 'MT', name: 'Mato Grosso' }, { uf: 'MS', name: 'Mato Grosso do Sul' },
+  { uf: 'MG', name: 'Minas Gerais' }, { uf: 'PA', name: 'Pará' }, { uf: 'PB', name: 'Paraíba' },
+  { uf: 'PR', name: 'Paraná' }, { uf: 'PE', name: 'Pernambuco' }, { uf: 'PI', name: 'Piauí' },
+  { uf: 'RJ', name: 'Rio de Janeiro' }, { uf: 'RN', name: 'Rio Grande do Norte' }, { uf: 'RS', name: 'Rio Grande do Sul' },
+  { uf: 'RO', name: 'Rondônia' }, { uf: 'RR', name: 'Roraima' }, { uf: 'SC', name: 'Santa Catarina' },
+  { uf: 'SP', name: 'São Paulo' }, { uf: 'SE', name: 'Sergipe' }, { uf: 'TO', name: 'Tocantins' }
+];
+
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedUf, setSelectedUf] = useState('SP');
 
   const handleLoginClick = async () => {
     setIsLoading(true);
     try {
-      await onLogin();
+      await onLogin(selectedUf);
     } catch (e) {
       setIsLoading(false);
     }
@@ -26,22 +40,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
       <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[30%] bg-slate-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
       {/* Header / Hero */}
-      <div className="px-6 pt-16 pb-8 z-10">
+      <div className="px-6 pt-12 pb-6 z-10">
         <div className="flex justify-center mb-6">
           <div className="bg-slate-900 p-4 rounded-2xl shadow-xl shadow-slate-200">
             <Car className="w-10 h-10 text-white" />
           </div>
         </div>
         
-        <h1 className="text-4xl text-center text-gray-900 mb-3 tracking-tight font-['Playfair_Display'] font-bold">
+        <h1 className="text-4xl text-center text-gray-900 mb-2 tracking-tight font-['Playfair_Display'] font-bold">
           AvalIA AI <span className="text-slate-700">Automóveis</span>
         </h1>
-        <p className="text-center text-gray-500 text-lg leading-relaxed">
-          A Inteligência Artificial para comprar e vender carros no preço certo.
+        <p className="text-center text-gray-500 text-base leading-relaxed">
+          Inteligência Artificial regionalizada para o mercado automotivo brasileiro.
         </p>
       </div>
 
-      {/* Value Proposition Cards */}
+      {/* UF Selector & Value Props */}
       <div className="px-6 space-y-6 z-10 flex-1 flex flex-col justify-center">
         
         {error && (
@@ -51,42 +65,44 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
           </div>
         )}
 
-        <div className="flex items-start gap-4">
-          <div className="bg-green-100 p-2 rounded-lg shrink-0 mt-1">
-            <TrendingUp className="w-5 h-5 text-green-700" />
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-900">Análise FIPE Real</h3>
-            <p className="text-sm text-gray-500 leading-snug">
-              Cruzamento de dados da Tabela FIPE com anúncios reais da web.
-            </p>
-          </div>
+        {/* UF Selector */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block flex items-center gap-2">
+            <MapPin className="w-3 h-3" /> Selecione seu Estado para Avaliação Regional
+          </label>
+          <select 
+            value={selectedUf}
+            onChange={(e) => setSelectedUf(e.target.value)}
+            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-800 font-bold outline-none focus:ring-2 focus:ring-slate-900 transition-all appearance-none cursor-pointer"
+          >
+            {BRAZIL_STATES.map(s => (
+              <option key={s.uf} value={s.uf}>{s.name} ({s.uf})</option>
+            ))}
+          </select>
+          <p className="text-[10px] text-slate-400 mt-2">Os preços de mercado serão buscados com base nesta região.</p>
         </div>
 
-        <div className="flex items-start gap-4">
-          <div className="bg-purple-100 p-2 rounded-lg shrink-0 mt-1">
-            <ShieldCheck className="w-5 h-5 text-purple-700" />
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="bg-green-100 p-1.5 rounded-lg mt-0.5">
+              <TrendingUp className="w-4 h-4 text-green-700" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-gray-900">Análise FIPE + Mercado</h3>
+              <p className="text-xs text-gray-500">Dados oficiais cruzados com anúncios reais.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-gray-900">Segurança na Negociação</h3>
-            <p className="text-sm text-gray-500 leading-snug">
-              Scripts prontos para justificar o preço ou negociar descontos.
-            </p>
+
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 p-1.5 rounded-lg mt-0.5">
+              <ShieldCheck className="w-4 h-4 text-blue-700" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-gray-900">Scripts de Venda</h3>
+              <p className="text-xs text-gray-500">Argumentos prontos para fechar negócio.</p>
+            </div>
           </div>
         </div>
-
-        <div className="flex items-start gap-4">
-          <div className="bg-orange-100 p-2 rounded-lg shrink-0 mt-1">
-            <CheckCircle2 className="w-5 h-5 text-orange-700" />
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-900">Expertise Mecânica</h3>
-            <p className="text-sm text-gray-500 leading-snug">
-              Dicas sobre problemas crônicos e liquidez de cada modelo.
-            </p>
-          </div>
-        </div>
-
       </div>
 
       {/* Footer / Action */}
@@ -103,7 +119,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
              </svg>
           ) : (
             <>
-              {/* Google Icon SVG */}
               <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -115,8 +130,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
           )}
         </button>
         
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Ao continuar, você aceita nossos Termos e Política.
+        <p className="text-center text-[10px] text-gray-400 mt-4">
+          Ao entrar, você concorda com a personalização de dados por UF.
         </p>
       </div>
     </div>

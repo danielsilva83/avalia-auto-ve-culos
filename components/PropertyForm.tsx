@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { VehicleFormData } from '../types';
 import { 
   Car, Calendar, Gauge, Fuel, DollarSign, 
   Settings2, Tag, ShieldCheck, CheckCircle2,
-  Disc, Wrench, Sun, Radio, Armchair
+  Disc, Sun, Radio, Armchair, MapPin
 } from 'lucide-react';
 
 interface VehicleFormProps {
   onSubmit: (data: VehicleFormData) => void;
   isLoading: boolean;
+  defaultUf?: string;
 }
 
-const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
+const BRAZIL_STATES = [
+  { uf: 'AC', name: 'Acre' }, { uf: 'AL', name: 'Alagoas' }, { uf: 'AP', name: 'Amapá' },
+  { uf: 'AM', name: 'Amazonas' }, { uf: 'BA', name: 'Bahia' }, { uf: 'CE', name: 'Ceará' },
+  { uf: 'DF', name: 'Distrito Federal' }, { uf: 'ES', name: 'Espírito Santo' }, { uf: 'GO', name: 'Goiás' },
+  { uf: 'MA', name: 'Maranhão' }, { uf: 'MT', name: 'Mato Grosso' }, { uf: 'MS', name: 'Mato Grosso do Sul' },
+  { uf: 'MG', name: 'Minas Gerais' }, { uf: 'PA', name: 'Pará' }, { uf: 'PB', name: 'Paraíba' },
+  { uf: 'PR', name: 'Paraná' }, { uf: 'PE', name: 'Pernambuco' }, { uf: 'PI', name: 'Piauí' },
+  { uf: 'RJ', name: 'Rio de Janeiro' }, { uf: 'RN', name: 'Rio Grande do Norte' }, { uf: 'RS', name: 'Rio Grande do Sul' },
+  { uf: 'RO', name: 'Rondônia' }, { uf: 'RR', name: 'Roraima' }, { uf: 'SC', name: 'Santa Catarina' },
+  { uf: 'SP', name: 'São Paulo' }, { uf: 'SE', name: 'Sergipe' }, { uf: 'TO', name: 'Tocantins' }
+];
+
+const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultUf }) => {
   const [formData, setFormData] = useState<VehicleFormData>({
     transactionType: 'venda',
     type: 'Carro',
@@ -23,6 +37,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
     color: '',
     condition: 'Bom',
     price: 0,
+    uf: defaultUf || 'SP',
     isArmored: false,
     hasLeather: false,
     hasSunroof: false,
@@ -30,6 +45,12 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
     hasServiceHistory: false,
     singleOwner: false
   });
+
+  useEffect(() => {
+    if (defaultUf) {
+      setFormData(prev => ({ ...prev, uf: defaultUf }));
+    }
+  }, [defaultUf]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -63,7 +84,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
           <Car className="w-6 h-6" />
           Nova Avaliação
         </h2>
-        <p className="text-slate-300 text-sm mt-1">Consulte FIPE e mercado em tempo real.</p>
+        <p className="text-slate-300 text-sm mt-1">Personalizada para o estado de {formData.uf}.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -94,20 +115,33 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
           </button>
         </div>
 
-        {/* Modelo */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Modelo do Veículo</label>
-          <div className="relative">
-            <input
-              type="text"
-              name="brandModel"
-              placeholder="Ex: Honda Civic EXL 2.0"
-              required
-              value={formData.brandModel}
+        {/* Modelo e UF */}
+        <div className="grid grid-cols-4 gap-4">
+          <div className="col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Modelo do Veículo</label>
+            <div className="relative">
+              <input
+                type="text"
+                name="brandModel"
+                placeholder="Ex: Honda Civic EXL"
+                required
+                value={formData.brandModel}
+                onChange={handleChange}
+                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <Car className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">UF</label>
+            <select
+              name="uf"
+              value={formData.uf}
               onChange={handleChange}
-              className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <Car className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+            >
+              {BRAZIL_STATES.map(s => <option key={s.uf} value={s.uf}>{s.uf}</option>)}
+            </select>
           </div>
         </div>
 
@@ -220,43 +254,6 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
             </div>
         </div>
 
-        {/* Opcionais (Checkboxes) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Diferenciais</label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
-              <input type="checkbox" name="hasServiceHistory" checked={formData.hasServiceHistory} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-700">Revisado</span>
-            </label>
-            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
-              <input type="checkbox" name="singleOwner" checked={formData.singleOwner} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
-              <ShieldCheck className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-700">Único Dono</span>
-            </label>
-            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
-              <input type="checkbox" name="hasLeather" checked={formData.hasLeather} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
-              <Armchair className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-700">Couro</span>
-            </label>
-            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
-              <input type="checkbox" name="hasSunroof" checked={formData.hasSunroof} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
-              <Sun className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-700">Teto Solar</span>
-            </label>
-            <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
-              <input type="checkbox" name="hasMultimedia" checked={formData.hasMultimedia} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
-              <Radio className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-700">Multimídia</span>
-            </label>
-             <label className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer">
-              <input type="checkbox" name="isArmored" checked={formData.isArmored} onChange={handleChange} className="w-4 h-4 text-blue-600 rounded" />
-              <Disc className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-700">Blindado</span>
-            </label>
-          </div>
-        </div>
-
         {/* Preço */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -290,7 +287,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading }) => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Analisando Veículo...
+              Analisando...
             </span>
           ) : (
             'Avaliar Agora'

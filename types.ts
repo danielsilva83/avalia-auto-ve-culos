@@ -8,6 +8,7 @@ export interface VehicleFormData {
   transmission: string; // Automatico, Manual
   condition: string;
   price: number;
+  uf: string; // Estado para pesquisa regional
   // New attributes for cars
   fuel: string;
   color: string;
