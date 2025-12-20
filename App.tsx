@@ -13,7 +13,6 @@ import { Car, LogOut, Star, MapPin } from 'lucide-react';
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LOADING);
   const [result, setResult] = useState<AnalysisResponse | null>(null);
-  const [lastFormData, setLastFormData] = useState<VehicleFormData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [selectedUf, setSelectedUf] = useState<string>(localStorage.getItem('avalia_uf') || 'SP');
@@ -116,9 +115,9 @@ const App: React.FC = () => {
       setAppState(AppState.LOADING);
       setError(null);
 
+      // Persiste a UF se ela mudou no form
       localStorage.setItem('avalia_uf', data.uf);
       setSelectedUf(data.uf);
-      setLastFormData(data);
 
       const response = await analyzeVehicle(data);
       setResult(response);
@@ -165,6 +164,7 @@ const App: React.FC = () => {
             <div className="flex items-center gap-2">
               <div 
                 className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-[10px] font-black border border-blue-100"
+                title="Região de Pesquisa Atual"
               >
                 <MapPin className="w-3 h-3" /> {selectedUf}
               </div>
@@ -180,7 +180,7 @@ const App: React.FC = () => {
                 {user.isPro ? (
                   <><Star className="w-3 h-3 fill-current" /> PRO</>
                 ) : (
-                  <>{user.credits} CRÉDITOS</>
+                  <>{user.credits} CRÉDITOS - ATIVE PRÓ</>
                 )}
               </div>
 
@@ -220,9 +220,9 @@ const App: React.FC = () => {
            </div>
         )}
 
-        {appState === AppState.RESULT && result && lastFormData && (
+        {appState === AppState.RESULT && result && (
           <div className="animate-fade-in">
-            <AnalysisResult data={result} vehicleData={lastFormData} onReset={resetApp} />
+            <AnalysisResult data={result} onReset={resetApp} />
           </div>
         )}
 
