@@ -8,7 +8,7 @@ import { analyzeVehicle } from './services/geminiService';
 import { authService } from './services/authService';
 import { supabase } from './services/supabaseClient';
 import { VehicleFormData, AnalysisResponse, AppState, User } from './types';
-import { Car, LogOut, Star } from 'lucide-react';
+import { Car, LogOut, Star, MapPin } from 'lucide-react';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LOADING);
@@ -115,7 +115,7 @@ const App: React.FC = () => {
       setAppState(AppState.LOADING);
       setError(null);
 
-      // Atualiza UF no localStorage se o usuário mudou no form
+      // Persiste a UF se ela mudou no form
       localStorage.setItem('avalia_uf', data.uf);
       setSelectedUf(data.uf);
 
@@ -142,7 +142,7 @@ const App: React.FC = () => {
         </div>
         <div className="animate-spin w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full mb-4"></div>
         <h2 className="text-xl font-bold text-slate-900 font-['Playfair_Display']">AvalIA AI Automóveis</h2>
-        <p className="text-slate-400 text-sm mt-2 max-w-xs">Restaurando sua sessão segura...</p>
+        <p className="text-slate-400 text-sm mt-2 max-w-xs">Restaurando sua sessão regional segura...</p>
       </div>
     );
   }
@@ -162,6 +162,13 @@ const App: React.FC = () => {
           
           {user && (
             <div className="flex items-center gap-2">
+              <div 
+                className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-[10px] font-black border border-blue-100"
+                title="Região de Pesquisa Atual"
+              >
+                <MapPin className="w-3 h-3" /> {selectedUf}
+              </div>
+              
               <div 
                 onClick={() => setAppState(AppState.PRICING)}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-colors ${
@@ -198,7 +205,7 @@ const App: React.FC = () => {
             <div className="mb-6 text-center">
               <h2 className="text-2xl font-bold text-gray-800">Olá, {user.name.split(' ')[0]}</h2>
               <p className="text-gray-500 mt-1 text-sm">
-                {user.isPro ? "Acesso PRO liberado." : `Você tem ${user.credits} avaliações gratuitas.`}
+                Sua IA de mercado em <strong>{selectedUf}</strong> está pronta.
               </p>
             </div>
             <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
@@ -206,10 +213,10 @@ const App: React.FC = () => {
         )}
 
         {appState === AppState.LOADING && user && (
-           <div className="flex flex-col items-center justify-center pt-20 space-y-4">
+           <div className="flex flex-col items-center justify-center pt-20 space-y-4 text-center">
               <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-              <h3 className="text-lg font-medium text-gray-600">Analisando Mercado em {selectedUf}...</h3>
-              <p className="text-sm text-gray-400 text-center max-w-xs">Buscando as melhores ofertas da sua região.</p>
+              <h3 className="text-lg font-medium text-gray-600">Pesquisando Mercado em {selectedUf}...</h3>
+              <p className="text-sm text-gray-400 max-w-xs">Cruzando Tabela FIPE com anúncios regionais ativos.</p>
            </div>
         )}
 
