@@ -19,9 +19,10 @@ const parseResponse = (text: string): AnalysisResponse => {
     const sections = text.split(/\[\[SEÇÃO \d\]\]/);
     
     if (sections.length > 1) {
-      result.priceAnalysis = sections[1].trim();
+      result.priceAnalysis = sections[ sections.length > 5 ? 1 : 1 ].trim();
     }
 
+    // Simplificando o parse para garantir que pegamos os scripts
     const scriptMatch = text.match(/\[\[SEÇÃO 2\]\]([\s\S]*?)\[\[SEÇÃO 3\]\]/);
     if (scriptMatch) {
       result.salesScripts = scriptMatch[1].trim()
@@ -59,7 +60,7 @@ const parseResponse = (text: string): AnalysisResponse => {
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const transactionContext = data.transactionType === 'compra' ? 'COMPRA (Quanto pagar)' : 'VENDA (Quanto pedir)';
+  const transactionContext = data.transactionType === 'compra' ? 'COMPRA (Avaliação para pagar)' : 'VENDA (Preço para anunciar)';
   
   const amenities = [
     data.transmission === 'Automático' ? 'Câmbio Automático' : 'Câmbio Manual',
@@ -68,47 +69,57 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
     data.hasSunroof ? 'Teto Solar' : null,
     data.hasLeather ? 'Bancos de Couro' : null,
     data.hasMultimedia ? 'Multimídia' : null,
-    data.hasServiceHistory ? 'Histórico de Revisão' : null,
+    data.hasServiceHistory ? 'Todas as Revisões em Dia' : 'Sem histórico de revisão informado',
     data.singleOwner ? 'Único Dono' : null
   ].filter(Boolean).join(', ');
 
   const prompt = `
-    PESQUISA REGIONAL OBRIGATÓRIA: Estado de ${data.uf} (Brasil).
+    Analise o seguinte veículo para fins de **${transactionContext}** no estado de **${data.uf}**:
     
-    Analise o veículo para **${transactionContext}** considerando o mercado local de **${data.uf}**:
+    DETALHES DO VEÍCULO:
+    - UF da Pesquisa: ${data.uf}
     - Modelo: ${data.brandModel}
     - Ano/Modelo: ${data.year}
-    - KM: ${data.mileage}
+    - Quilometragem: ${data.mileage} km
+    - Cor: ${data.color}
+    - Conservação: ${data.condition}
     - Diferenciais: ${amenities}
-    - Preço Base Informado: R$ ${data.price.toLocaleString('pt-BR')}
+    - Preço Base: R$ ${data.price.toLocaleString('pt-BR')}
 
-    TAREFAS DE PESQUISA (Use Google Search):
-    1. Busque o valor da Tabela FIPE para este modelo.
-    2. Procure por anúncios similares ATIVOS em portais como Webmotors, OLX ou iCarros NO ESTADO DE ${data.uf}.
-    3. Identifique se existe variação de IPVA ou taxas regionais em ${data.uf} que impactam o valor.
-    4. Avalie a liquidez: este carro vende rápido em ${data.uf}?
+    Utilize o Google Search para encontrar:
+    1. O valor na Tabela FIPE atual para este modelo em ${data.uf}.
+    2. Ofertas reais de mercado em portais (Webmotors, OLX) especificamente no estado de ${data.uf}.
+    3. Verifique se há impostos (IPVA) ou taxas regionais em ${data.uf} que afetem o valor.
+    
+    Considere que o mercado em ${data.uf} pode ter variações de preço comparado à média nacional.
   `;
 
   const systemInstruction = `
-    Você é o 'AvalIA AI Automóveis', especialista em precificação regional brasileira.
-    
-    REGRA DE OURO: Você deve diferenciar o preço de mercado nacional da média praticada no estado de ${data.uf}.
-    
-    FORMATO DE RESPOSTA (Markdown):
+    Você é o "AvalIA AI Automóveis", um Consultor Especialista em Mercado Automotivo Regional.
+
+    OBJETIVO:
+    Analisar o veículo focando na região informada (UF). O preço em SP é diferente do preço no RS ou NE.
+
+    IMPORTANTE:
+    Você DEVE usar a ferramenta 'googleSearch' para buscar preços reais de anúncios NO ESTADO INFORMADO (${data.uf}).
+
+    ESTRUTURA DE SAÍDA:
     [[SEÇÃO 1]]
-    ### Análise de Mercado Regional (${data.uf})
-    - Valor FIPE vs. Valor Real Praticado em ${data.uf}.
-    - Por que o preço varia nesta região (Destaque IPVA, Demanda Local ou Logística).
-    - Sugestão de Preço (Mínimo, Ideal e Teto).
+    Análise de Mercado em ${data.uf}. 
+    - Compare explicitamente com a FIPE Regional.
+    - Estime faixa de preço (Mínimo - Ideal - Teto) para ${data.uf}.
+    - Destaque fatores regionais.
 
     [[SEÇÃO 2]]
-    Scripts de Negociação adaptados para ${data.uf}.
+    Script de Negociação.
+    - 2 frases para o contexto local.
 
     [[SEÇÃO 3]]
-    Pílula de Conhecimento técnico sobre o modelo.
+    Pílula de Conhecimento.
+    - 1 detalhe técnico/mercado sobre o modelo.
 
     [[SEÇÃO 4]]
-    JSON Data para CRM.
+    JSON Data.
   `;
 
   try {
@@ -127,6 +138,8 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
     }
 
     const candidate = response.candidates[0];
+    const text = response.text;
+    
     const groundingUrls = candidate.groundingMetadata?.groundingChunks
       ?.map((chunk: any) => ({
         title: chunk.web?.title || chunk.web?.uri || "Fonte",
@@ -134,7 +147,7 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
       }))
       .filter((item: any) => item.uri);
 
-    const parsed = parseResponse(response.text || "");
+    const parsed = parseResponse(text || "");
     return { ...parsed, groundingUrls };
   } catch (error) {
     console.error("Error calling Gemini:", error);
