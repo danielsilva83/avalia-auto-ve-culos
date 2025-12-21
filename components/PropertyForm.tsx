@@ -31,7 +31,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
     type: 'Carro',
     brandModel: '',
     year: new Date().getFullYear(),
-    mileage: 0,
+    mileage: '0',
     transmission: 'Automático',
     fuel: 'Flex',
     color: '',
@@ -165,26 +165,19 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           </div>
 
           <div>
-            <label htmlFor="mileage" className="block text-sm font-medium text-gray-700 mb-1">
-              KM Atual
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">KM Atual</label>
             <div className="relative">
               <input
-                id="mileage"
-                name="mileage"
                 type="number"
-                /* Melhora teclado mobile */
-                inputMode="numeric" 
-                pattern="[0-9]*"
-                
+                name="mileage"
                 required
+                step="1000"
+                min="0"
                 value={formData.mileage}
                 onChange={handleChange}
-                placeholder="Ex: 45000"
-                /* p-4 garante uma área de toque maior para dedos */
-                className="w-full p-4 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base appearance-none"
+                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
-              <Gauge className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              <Gauge className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
             </div>
           </div>
         </div>
