@@ -4,7 +4,7 @@ export interface VehicleFormData {
   type: string;
   brandModel: string;
   year: number;
-  mileage: string;
+  mileage: number;
   transmission: string;
   condition: string;
   price: number;
