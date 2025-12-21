@@ -172,7 +172,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
                 name="mileage"
                 required
                 step="1000"
-                min="0"
+                
                 value={formData.mileage}
                 onChange={handleChange}
                 className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
