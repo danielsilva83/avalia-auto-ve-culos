@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [selectedUf, setSelectedUf] = useState<string>(localStorage.getItem('avalia_uf') || 'SP');
+  const [vehicleData, setVehicleData] = useState<VehicleFormData | null>(null);
   const isInitializing = useRef(true);
 
   const syncUserSession = useCallback(async () => {
@@ -118,6 +119,7 @@ const App: React.FC = () => {
       // Persiste a UF se ela mudou no form
       localStorage.setItem('avalia_uf', data.uf);
       setSelectedUf(data.uf);
+      setVehicleData(data);
 
       const response = await analyzeVehicle(data);
       setResult(response);
@@ -220,9 +222,9 @@ const App: React.FC = () => {
            </div>
         )}
 
-        {appState === AppState.RESULT && result && (
+        {appState === AppState.RESULT && result && vehicleData && (
           <div className="animate-fade-in">
-            <AnalysisResult data={result} onReset={resetApp} />
+            <AnalysisResult data={result} onReset={resetApp} vehicleData={vehicleData} />
           </div>
         )}
 
