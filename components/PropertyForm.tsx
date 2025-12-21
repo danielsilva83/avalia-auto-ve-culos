@@ -168,11 +168,11 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
             <label className="block text-sm font-medium text-gray-700 mb-1">KM Atual</label>
             <div className="relative">
               <input
-                type="number"
+                type="string"
                 name="mileage"
                 required
                 step="1000"
-                min="0"
+                min=""
                 value={formData.mileage}
                 onChange={handleChange}
                 className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
