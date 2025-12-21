@@ -1,23 +1,22 @@
 
 export interface VehicleFormData {
   transactionType: 'venda' | 'compra';
-  type: string; // Carro, Moto, Caminhonete
-  brandModel: string; // Marca e Modelo
+  type: string;
+  brandModel: string;
   year: number;
-  mileage: number; // KM
-  transmission: string; // Automatico, Manual
+  mileage: number;
+  transmission: string;
   condition: string;
   price: number;
-  uf: string; // Estado para pesquisa regional
-  // New attributes for cars
+  uf: string;
   fuel: string;
   color: string;
-  isArmored: boolean; // Blindado
+  isArmored: boolean;
   hasLeather: boolean;
   hasSunroof: boolean;
   hasMultimedia: boolean;
-  hasServiceHistory: boolean; // Todas as revisões
-  singleOwner: boolean; // Único dono
+  hasServiceHistory: boolean;
+  singleOwner: boolean;
 }
 
 export interface CrmData {
@@ -28,12 +27,14 @@ export interface CrmData {
 }
 
 export interface AnalysisResponse {
-  priceAnalysis: string; // Section 1: Markdown
-  salesScripts: string[]; // Section 2: Array of strings
-  knowledgePill: string; // Section 3: Concept
-  crmData: CrmData; // Section 4: JSON Data
-  groundingUrls?: { title: string; uri: string }[]; // Section 5: Sources from Search Grounding
+  priceAnalysis: string;
+  salesScripts: string[];
+  knowledgePill: string;
+  crmData: CrmData;
+  groundingUrls?: { title: string; uri: string }[];
 }
+
+export type ToolType = 'dossier' | 'ads' | 'future' | 'negotiation' | 'profit' | null;
 
 export interface User {
   id: string;
@@ -43,19 +44,19 @@ export interface User {
   credits: number;
 }
 
-export interface PixPaymentResponse {
-  paymentId: string;
-  qrCodeBase64: string;
-  copyPasteCode: string;
-  status: string;
-  ticketUrl?: string;
-}
-
 export enum AppState {
   LOGIN = 'LOGIN',
   FORM = 'FORM',
   LOADING = 'LOADING',
   RESULT = 'RESULT',
   ERROR = 'ERROR',
-  PRICING = 'PRICING' // New state for paywall
+  PRICING = 'PRICING'
+}
+
+export interface PixPaymentResponse {
+  paymentId: string;
+  qrCodeBase64: string;
+  copyPasteCode: string;
+  status: string;
+  ticketUrl?: string;
 }
