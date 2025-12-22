@@ -5,7 +5,7 @@ import {
   Share2, ArrowLeft, ExternalLink, LayoutGrid, FileText, 
   Megaphone, TrendingDown, ShieldAlert, Calculator, X, 
   ChevronRight, Printer, CheckCircle2, DollarSign, Target,
-  Zap, Copy, Check, Settings2, Car
+  Zap, Copy, Check, Settings2, Car, ShieldCheck, AlertTriangle
 } from 'lucide-react';
 import { generateToolContent } from '../services/geminiService';
 
@@ -21,6 +21,9 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   const [isToolLoading, setIsToolLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Link de Afiliado - Substitua pelo seu link de parceiro
+  const AFFILIATE_LINK = "https://anycar.com.br/?ind=lwiVZxBshn"; 
 
   const openTool = async (type: ToolType) => {
     setActiveTool(type);
@@ -212,6 +215,36 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* SLOT DE AFILIADOS: CHECK DE HISTÓRICO VEICULAR */}
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100 shadow-sm animate-fade-in-up">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="bg-amber-100 p-2 rounded-xl">
+            <ShieldCheck className="w-6 h-6 text-amber-600" />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Check de Segurança Obrigatório</h4>
+            <p className="text-xs text-slate-500">Evite comprar um carro com passagem por leilão, sinistro ou bloqueio judicial.</p>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+            <AlertTriangle className="w-3 h-3 text-amber-500" />
+            <span>3 em cada 10 veículos possuem histórico de leilão.</span>
+          </div>
+          
+          <a 
+            href={AFFILIATE_LINK} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 uppercase text-xs"
+          >
+            Consultar Histórico Completo <ExternalLink className="w-4 h-4" />
+          </a>
+          <p className="text-[9px] text-center text-slate-400 uppercase font-medium">Relatório completo via Olho no Carro®</p>
         </div>
       </div>
 
