@@ -21,11 +21,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
   const [copyPaste, setCopyPaste] = useState<string>('');
   const [paymentId, setPaymentId] = useState<string | null>(null);
   
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const pollingInterval = useRef<number | null>(null);
 
   // Timer Regressivo visual
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     
     if (step === 'pix') {
       interval = setInterval(() => {
@@ -53,6 +53,14 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
           
           if (status === 'approved') {
              if (pollingInterval.current) clearInterval(pollingInterval.current);
+             
+             // Disparo do evento de conversão do Google Ads
+             if (typeof window !== 'undefined' && (window as any).gtag) {
+               (window as any).gtag('event', 'conversion', {
+                 'send_to': 'AW-17815766264/grXNCKbD7dMbEPiJnK9C'
+               });
+             }
+             
              setStep('success');
           } else if (status === 'cancelled' || status === 'rejected') {
              if (pollingInterval.current) clearInterval(pollingInterval.current);
@@ -61,7 +69,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
         } catch (e) {
           console.error("Erro no polling", e);
         }
-      }, 5000); // Checa a cada 5s
+      }, 5000) as unknown as number;
     }
 
     return () => {
@@ -78,11 +86,9 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
 
       const data = await paymentService.createPixPayment(user.email);
       
-      // Se vier base64 do MP, usa. Se não (mock), usa imagem de placeholder.
       if (data.qrCodeBase64) {
         setQrCodeImage(`data:image/png;base64,${data.qrCodeBase64}`);
       } else {
-        // Imagem genérica de QR Code para testes/mock
         setQrCodeImage("https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg");
       }
 
@@ -227,7 +233,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ onUpgrade, onClose }) => {
             </div>
           )}
 
-          {/* STEP 3: PIX QR CODE (REAL ou MOCK) */}
+          {/* STEP 3: PIX QR CODE */}
           {step === 'pix' && (
             <div className="flex flex-col items-center space-y-5 animate-fade-in">
               <div className="w-48 h-48 bg-white rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden">
