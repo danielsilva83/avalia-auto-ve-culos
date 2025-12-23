@@ -6,7 +6,7 @@ import {
   Megaphone, TrendingDown, ShieldAlert, Calculator, X, 
   ChevronRight, Printer, CheckCircle2, DollarSign, Target,
   Zap, Copy, Check, Settings2, Car, ShieldCheck, AlertTriangle,
-  Lightbulb, MessageSquare, Tag, Send
+  Lightbulb, MessageSquare, Tag
 } from 'lucide-react';
 import { generateToolContent } from '../services/geminiService';
 import RoiCalculator from './RoiCalculator';
@@ -57,16 +57,6 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     return encodeURIComponent(text);
   };
 
-  const shareDossierWhatsApp = () => {
-    const text = `*📄 DOSSIÊ DE VENDA CERTIFICADO - AvalIA AI*\n\n` +
-      `🚗 *VEÍCULO:* ${vehicleData.brandModel.toUpperCase()}\n` +
-      `📅 *ANO:* ${vehicleData.year}\n` +
-      `📍 *REGIÃO:* ${vehicleData.uf}\n\n` +
-      `${toolContent.replace(/[#*]/g, '')}\n\n` +
-      `_Relatório gerado via avaliaaiautomoveis.com_`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
   const ToolOverlay = () => {
     if (!activeTool) return null;
     const titles: Record<string, string> = {
@@ -78,8 +68,8 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     };
 
     return (
-      <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in print:static print:block print:bg-white print:z-auto">
-        <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10 print:hidden">
+      <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in">
+        <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
           <button onClick={() => setActiveTool(null)} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </button>
@@ -94,51 +84,40 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-32 print:p-0 print:overflow-visible print:block">
+        <div className="flex-1 overflow-y-auto p-6 pb-32">
           {isToolLoading ? (
-             <div className="flex flex-col items-center justify-center h-64 space-y-4 print:hidden">
+             <div className="flex flex-col items-center justify-center h-64 space-y-4">
                 <div className="w-12 h-12 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"></div>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Gerando Inteligência...</p>
              </div>
           ) : (
-            <div className="animate-fade-in-up print:animate-none print:block">
+            <div className="animate-fade-in-up">
               {activeTool === 'profit' ? (
                 <RoiCalculator baseSalePrice={vehicleData.price} brandModel={vehicleData.brandModel} />
               ) : (
-                <div id="printable-dossier" className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none print:block' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
+                <div className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
                   {activeTool === 'dossier' && (
-                    <div className="mb-8 text-center border-b border-white/10 pb-8 print:border-slate-200 print:mb-6 print:pb-6 print:block">
-                       <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl print:hidden">
+                    <div className="mb-8 text-center border-b border-white/10 pb-8">
+                       <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
                           <Car className="w-10 h-10 text-white" />
                        </div>
-                       <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic print:text-black print:text-2xl">Laudo de Avaliação</h1>
-                       <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest print:text-slate-500">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
-                       <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold print:mt-4">
-                          <div className="bg-white/5 p-2 rounded uppercase border border-white/5 print:border-slate-200 print:bg-slate-50 print:text-black">{vehicleData.brandModel}</div>
-                          <div className="bg-white/5 p-2 rounded uppercase border border-white/5 print:border-slate-200 print:bg-slate-50 print:text-black">Ano {vehicleData.year}</div>
+                       <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic">Laudo de Avaliação</h1>
+                       <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
+                       <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold">
+                          <div className="bg-white/5 p-2 rounded uppercase">{vehicleData.brandModel}</div>
+                          <div className="bg-white/5 p-2 rounded uppercase">Ano {vehicleData.year}</div>
                        </div>
                     </div>
                   )}
-                  <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300 print:text-black print:text-sm' : 'text-slate-700'}`}>
+                  <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300' : 'text-slate-700'}`}>
                     {toolContent}
                   </div>
                   {activeTool === 'dossier' && (
-                    <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4 print:mt-8 print:pt-4 print:border-slate-100">
-                      <div className="print:hidden flex flex-col gap-4">
-                        <button 
-                          onClick={shareDossierWhatsApp} 
-                          className="w-full py-4 bg-green-600 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 transition-colors shadow-lg"
-                        >
-                           <Send className="w-5 h-5" /> COMPARTILHAR NO WHATSAPP
-                        </button>
-                        <button 
-                          onClick={() => window.print()} 
-                          className="w-full py-4 bg-white/10 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/10"
-                        >
-                           <Printer className="w-5 h-5" /> SALVAR COMO PDF
-                        </button>
-                      </div>
-                      <p className="text-center text-[9px] text-slate-500 uppercase font-black print:text-left print:text-[8px] print:mt-4">Este documento é um relatório informativo baseado em inteligência artificial regional e não substitui vistoria cautelar física ou perícia técnica presencial.</p>
+                    <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
+                      <button onClick={() => window.print()} className="w-full py-4 bg-white text-slate-900 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-lg">
+                         <Printer className="w-5 h-5" /> IMPRIMIR / SALVAR PDF
+                      </button>
+                      <p className="text-center text-[9px] text-slate-500 uppercase font-black">Este documento não substitui vistoria cautelar física.</p>
                     </div>
                   )}
                 </div>
@@ -146,59 +125,6 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
             </div>
           )}
         </div>
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media print {
-            /* Forçar fundo branco e texto preto em todos os navegadores */
-            html, body { 
-              background: white !important; 
-              color: black !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              height: auto !important;
-              overflow: visible !important;
-            }
-            
-            /* Esconder a interface do App */
-            #root > *:not(.fixed), 
-            header, nav, footer, button, .print\\:hidden { 
-              display: none !important; 
-            }
-
-            /* Resetar o container do Dossiê */
-            .fixed.inset-0.z-\\[60\\] {
-              position: static !important;
-              display: block !important;
-              width: 100% !important;
-              height: auto !important;
-              overflow: visible !important;
-              z-index: auto !important;
-              background: white !important;
-            }
-
-            #printable-dossier { 
-              display: block !important;
-              position: relative !important;
-              width: 100% !important;
-              margin: 0 !important;
-              padding: 1.5cm !important;
-              background: white !important;
-              color: black !important;
-              box-shadow: none !important;
-              border: none !important;
-              overflow: visible !important;
-            }
-
-            #printable-dossier * {
-              color: black !important;
-              background: transparent !important;
-            }
-
-            @page {
-              margin: 1cm;
-              size: auto;
-            }
-          }
-        `}} />
       </div>
     );
   };
@@ -340,6 +266,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                 </button>
               </div>
               <div className="p-3 grid gap-2 max-h-[70vh] overflow-y-auto">
+                 <button onClick={() => openTool('profit')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-all text-left group border border-transparent hover:border-green-100">
+                  <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition-transform"><Calculator className="w-6 h-6" /></div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900">Lucro na Veia</p>
+                    <p className="text-[10px] text-slate-400 uppercase font-black">Calculadora de ROI</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-300" />
+                </button>
                 <button onClick={() => openTool('dossier')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-all text-left group border border-transparent hover:border-blue-100">
                   <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"><FileText className="w-6 h-6" /></div>
                   <div className="flex-1">
@@ -372,21 +306,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-300" />
                 </button>
-                <button onClick={() => openTool('profit')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-all text-left group border border-transparent hover:border-green-100">
-                  <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition-transform"><Calculator className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Lucro na Veia</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Calculadora de ROI</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
+               
               </div>
            </div>
         </div>
       )}
 
       {/* Floating Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50 print:hidden">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50">
         <div className="max-w-md mx-auto flex gap-3">
           <a href={`https://wa.me/?text=${generateWhatsAppText()}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
             <Share2 className="w-5 h-5" /> COMPARTILHAR
