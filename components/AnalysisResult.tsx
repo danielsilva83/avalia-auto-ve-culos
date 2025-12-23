@@ -189,6 +189,35 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
           ))}
         </div>
       )}
+       {/* SLOT DE AFILIADOS */}
+      <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-6 border border-slate-200 shadow-sm animate-fade-in-up">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <ShieldCheck className="w-6 h-6 text-slate-900" />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Check de Segurança Obrigatório</h4>
+            <p className="text-xs text-slate-500">Evite prejuízos com carros de leilão, sinistro ou bloqueio judicial.</p>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+            <AlertTriangle className="w-3 h-3 text-amber-500" />
+            <span>3 em cada 10 veículos possuem histórico de leilão.</span>
+          </div>
+          
+          <a 
+            href={AFFILIATE_LINK} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 uppercase text-xs"
+          >
+            Consultar Histórico Completo <ExternalLink className="w-4 h-4" />
+          </a>
+          <p className="text-[9px] text-center text-slate-400 uppercase font-medium">Relatório completo via Olho no Carro®</p>
+        </div>
+      </div>
 
       {/* Scripts de Negociação */}
       {data.salesScripts && data.salesScripts.length > 0 && (
@@ -221,35 +250,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
       )}
 
-      {/* SLOT DE AFILIADOS */}
-      <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-6 border border-slate-200 shadow-sm animate-fade-in-up">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200">
-            <ShieldCheck className="w-6 h-6 text-slate-900" />
-          </div>
-          <div>
-            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Check de Segurança Obrigatório</h4>
-            <p className="text-xs text-slate-500">Evite prejuízos com carros de leilão, sinistro ou bloqueio judicial.</p>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
-            <AlertTriangle className="w-3 h-3 text-amber-500" />
-            <span>3 em cada 10 veículos possuem histórico de leilão.</span>
-          </div>
-          
-          <a 
-            href={AFFILIATE_LINK} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 uppercase text-xs"
-          >
-            Consultar Histórico Completo <ExternalLink className="w-4 h-4" />
-          </a>
-          <p className="text-[9px] text-center text-slate-400 uppercase font-medium">Relatório completo via Olho no Carro®</p>
-        </div>
-      </div>
+     
 
       {/* Menu de Ferramentas PRO */}
       {showMenu && (
