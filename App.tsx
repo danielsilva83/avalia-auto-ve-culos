@@ -10,7 +10,7 @@ import { analyzeVehicle } from './services/geminiService';
 import { authService } from './services/authService';
 import { supabase } from './services/supabaseClient';
 import { VehicleFormData, AnalysisResponse, AppState, User } from './types';
-import { Car, LogOut, Star, MapPin, ChevronLeft, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Car, LogOut, Star, MapPin, ChevronLeft, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LOADING);
@@ -24,20 +24,15 @@ const App: React.FC = () => {
   
   const isInitializing = useRef(true);
 
-  /**
-   * ROUTER DINÂMICO PARA SEO PROGRAMÁTICO
-   * Detecta URLs como /modelo/honda/civic para exibir conteúdo SEO
-   */
+  // Router Dinâmico para SEO Programático
   const handleRouting = useCallback(() => {
     const path = window.location.pathname;
     
-    // Rota do Diretório de Modelos
     if (path === '/modelos') {
       setAppState(AppState.SEO_DIRECTORY);
       return true;
     }
     
-    // Rota de Página de Modelo Específico
     const modelMatch = path.match(/^\/modelo\/([^/]+)\/([^/]+)/);
     if (modelMatch) {
       setPathParams({ brand: modelMatch[1], model: modelMatch[2] });
@@ -48,24 +43,20 @@ const App: React.FC = () => {
     return false;
   }, []);
 
-  /**
-   * SINCRONIZAÇÃO DE SESSÃO
-   * Gerencia login e acesso às rotas públicas/privadas
-   */
   const syncUserSession = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
       
       // Checa se é uma rota pública de SEO antes de exigir login
       const isPublicPage = handleRouting();
-      
+      if (isPublicPage) return;
+
       if (currentUser) {
         setUser(currentUser);
-        // Se estiver em uma página pública, mantém nela. Se não, vai para o Form.
-        if (!isPublicPage) setAppState(AppState.FORM);
+        setAppState(AppState.FORM);
       } else {
         setUser(null);
-        if (!isPublicPage) setAppState(AppState.LOGIN);
+        setAppState(AppState.LOGIN);
       }
     } catch (e) {
       setUser(null);
@@ -84,7 +75,6 @@ const App: React.FC = () => {
           await syncUserSession();
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
-          // Só redireciona se não estiver em uma URL de SEO
           if (!window.location.pathname.startsWith('/modelo') && window.location.pathname !== '/modelos') {
             setAppState(AppState.LOGIN);
           }
@@ -94,9 +84,6 @@ const App: React.FC = () => {
     }
   }, [syncUserSession]);
 
-  /**
-   * HANDLERS PRINCIPAIS
-   */
   const handleLogin = async (uf: string) => {
     setSelectedUf(uf);
     localStorage.setItem('avalia_uf', uf);
@@ -110,7 +97,6 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      // Sistema de Créditos / Paywall
       const userWithCredits = await authService.consumeCredit(user);
       if (!userWithCredits) {
         setAppState(AppState.PRICING);
@@ -122,7 +108,6 @@ const App: React.FC = () => {
       setAppState(AppState.LOADING);
       setVehicleData(data);
       
-      // Chamada à API Gemini com Search Grounding
       const response = await analyzeVehicle(data);
       setResult(response);
       setAppState(AppState.RESULT);
@@ -148,7 +133,6 @@ const App: React.FC = () => {
     else setAppState(AppState.LOGIN);
   };
 
-  // Loader inicial de sistema
   if (appState === AppState.LOADING && !vehicleData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
@@ -183,12 +167,12 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-md mx-auto px-4 py-8 relative pb-24">
-        {/* VIEW: DIRETÓRIO SEO */}
+        {/* Camada SEO: Diretório */}
         {appState === AppState.SEO_DIRECTORY && (
           <ModelDirectory onSelect={(b, m) => window.location.href = `/modelo/${b}/${m}`} />
         )}
         
-        {/* VIEW: PÁGINA DE MODELO SEO */}
+        {/* Camada SEO: Página do Modelo */}
         {appState === AppState.SEO_MODEL_PAGE && (
           <SeoModelPage 
             brand={pathParams.brand || ''} 
@@ -197,30 +181,24 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* VIEW: LOGIN */}
+        {/* Camada App: Login */}
         {appState === AppState.LOGIN && <LoginScreen onLogin={handleLogin} error={error} />}
         
-        {/* VIEW: PAGAMENTO */}
+        {/* Camada App: Pagamento */}
         {appState === AppState.PRICING && (
           <PricingModal onUpgrade={() => syncUserSession()} onClose={() => setAppState(AppState.FORM)} />
         )}
 
-        {/* VIEW: FORMULÁRIO PRINCIPAL */}
+        {/* Camada App: Formulário */}
         {appState === AppState.FORM && user && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10">
-              <Sparkles className="w-5 h-5" />
-              <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
-            </div>
-            <VehicleForm 
-              onSubmit={handleFormSubmit} 
-              isLoading={isSubmitting} 
-              defaultUf={selectedUf} 
-            />
-          </div>
+          <VehicleForm 
+            onSubmit={handleFormSubmit} 
+            isLoading={isSubmitting} 
+            defaultUf={selectedUf} 
+          />
         )}
 
-        {/* VIEW: CARREGAMENTO DA ANÁLISE */}
+        {/* Camada App: Carregamento de Análise */}
         {appState === AppState.LOADING && vehicleData && (
            <div className="flex flex-col items-center justify-center pt-20 space-y-6">
               <div className="relative">
@@ -228,27 +206,22 @@ const App: React.FC = () => {
                 <Car className="absolute inset-0 m-auto w-8 h-8 text-slate-800 animate-pulse" />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Analisando Mercado em Tempo Real</h3>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Analisando Mercado Real</h3>
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Cruzando FIPE + Anúncios em {selectedUf}</p>
-                <div className="mt-4 flex gap-1 justify-center">
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"></div>
-                </div>
               </div>
            </div>
         )}
 
-        {/* VIEW: RESULTADO FINAL */}
+        {/* Camada App: Resultado */}
         {appState === AppState.RESULT && result && vehicleData && (
           <AnalysisResult data={result} onReset={resetApp} vehicleData={vehicleData} />
         )}
 
-        {/* VIEW: ERRO CRÍTICO */}
+        {/* Camada App: Erro */}
         {appState === AppState.ERROR && (
           <div className="p-8 text-center bg-white rounded-[2rem] border border-red-100 shadow-xl shadow-red-900/5 animate-fade-in">
             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-8 h-8" />
+              <Star className="w-8 h-8" />
             </div>
             <h3 className="text-slate-900 font-black uppercase text-sm mb-2">Falha na Inteligência</h3>
             <p className="text-xs text-gray-500 leading-relaxed mb-8">{error}</p>
