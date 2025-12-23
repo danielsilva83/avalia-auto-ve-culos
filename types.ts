@@ -27,11 +27,23 @@ export interface CrmData {
 }
 
 export interface AnalysisResponse {
+  id?: string; // ID vindo do banco para histórico
   priceAnalysis: string;
   salesScripts: string[];
   knowledgePill: string;
   crmData: CrmData;
   groundingUrls?: { title: string; uri: string }[];
+  createdAt?: string;
+}
+
+export interface PriceAlert {
+  id: string;
+  userId: string;
+  brandModel: string;
+  uf: string;
+  initialPrice: number;
+  active: boolean;
+  createdAt: string;
 }
 
 export type ToolType = 'dossier' | 'ads' | 'future' | 'negotiation' | 'profit' | null;
@@ -51,6 +63,7 @@ export enum AppState {
   RESULT = 'RESULT',
   ERROR = 'ERROR',
   PRICING = 'PRICING',
+  DASHBOARD = 'DASHBOARD', // Novo estado
   SEO_DIRECTORY = 'SEO_DIRECTORY',
   SEO_MODEL_PAGE = 'SEO_MODEL_PAGE'
 }

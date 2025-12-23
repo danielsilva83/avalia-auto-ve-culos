@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 import { AnalysisResponse, VehicleFormData, ToolType } from '../types';
 import { 
   Share2, ArrowLeft, ExternalLink, LayoutGrid, FileText, 
-  Megaphone, TrendingDown, ShieldAlert, Calculator, X, 
+  Megaphone, TrendingUp, TrendingDown, ShieldAlert, Calculator, X, 
   ChevronRight, Printer, CheckCircle2, DollarSign, Target,
   Zap, Copy, Check, Settings2, Car, ShieldCheck, AlertTriangle,
-  Lightbulb, MessageSquare, Tag
+  Lightbulb, MessageSquare, Tag, Bell, BellRing, Loader2
 } from 'lucide-react';
 import { generateToolContent } from '../services/geminiService';
+import { historyService } from '../services/historyService';
+import { authService } from '../services/authService';
 import RoiCalculator from './RoiCalculator';
 
 interface AnalysisResultProps {
@@ -23,8 +25,28 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   const [isToolLoading, setIsToolLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [alertActive, setAlertActive] = useState(false);
+  const [isAlertLoading, setIsAlertLoading] = useState(false);
 
   const AFFILIATE_LINK = "https://anycar.com.br/?ind=lwiVZxBshn"; 
+
+  const handleCreateAlert = async () => {
+    setIsAlertLoading(true);
+    try {
+      const user = await authService.getCurrentUser();
+      if (!user) return;
+      if (!user.isPro) {
+        alert("Recurso exclusivo para assinantes PRO!");
+        return;
+      }
+      await historyService.createAlert(user.id, vehicleData.brandModel, vehicleData.uf, vehicleData.price);
+      setAlertActive(true);
+    } catch (e) {
+      alert("Erro ao criar alerta. Tente novamente.");
+    } finally {
+      setIsAlertLoading(false);
+    }
+  };
 
   const openTool = async (type: ToolType) => {
     setActiveTool(type);
@@ -64,7 +86,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
       ads: 'Gerador de Anúncios Turbo',
       future: 'Visão de Futuro (6-24m)',
       negotiation: 'Cards de Negociação',
-      profit: 'Cálculadora de ROI Automotivo'
+      profit: 'Calculadora de ROI Automotivo'
     };
 
     return (
@@ -87,7 +109,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         <div className="flex-1 overflow-y-auto p-6 pb-32">
           {isToolLoading ? (
              <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                <div className="w-12 h-12 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"></div>
+                <Loader2 className="w-12 h-12 text-slate-900 animate-spin" />
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Gerando Inteligência...</p>
              </div>
           ) : (
@@ -130,14 +152,38 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6 pb-32">
+    <div className="w-full max-w-md mx-auto space-y-6 pb-32 animate-fade-in">
       <ToolOverlay />
 
-      <div className="flex items-center gap-2">
-        <button onClick={onReset} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-          <ArrowLeft className="w-6 h-6 text-slate-600" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button onClick={onReset} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+            <ArrowLeft className="w-6 h-6 text-slate-600" />
+          </button>
+          <h2 className="text-xl font-bold text-slate-800">Resultado: {vehicleData.brandModel}</h2>
+        </div>
+        
+        <button 
+          onClick={handleCreateAlert}
+          disabled={alertActive || isAlertLoading}
+          className={`p-3 rounded-2xl transition-all border flex items-center gap-2 ${
+            alertActive 
+            ? 'bg-blue-600 text-white border-blue-600' 
+            : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
+          }`}
+          title={alertActive ? "Alerta Configurado" : "Monitorar Preço"}
+        >
+          {isAlertLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : alertActive ? (
+            <BellRing className="w-5 h-5" />
+          ) : (
+            <Bell className="w-5 h-5" />
+          )}
+          <span className="text-[10px] font-black uppercase tracking-widest hidden xs:block">
+            {alertActive ? 'Monitorando' : 'Criar Alerta'}
+          </span>
         </button>
-        <h2 className="text-xl font-bold text-slate-800">Resultado: {vehicleData.brandModel}</h2>
       </div>
 
       {/* Cards de Preço e Liquidez */}
@@ -189,7 +235,8 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
           ))}
         </div>
       )}
-       {/* SLOT DE AFILIADOS */}
+
+      {/* SLOT DE AFILIADOS */}
       <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-6 border border-slate-200 shadow-sm animate-fade-in-up">
         <div className="flex items-start gap-4 mb-4">
           <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200">
@@ -250,11 +297,20 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
       )}
 
-     
+      {/* Menu de Ferramentas PRO (Floating Menu) */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50">
+        <div className="max-w-md mx-auto flex gap-3">
+          <a href={`https://wa.me/?text=${generateWhatsAppText()}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform text-xs uppercase tracking-widest">
+            <Share2 className="w-5 h-5" /> COMPARTILHAR
+          </a>
+          <button onClick={() => setShowMenu(true)} className="flex-1 bg-slate-900 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform text-xs uppercase tracking-widest">
+            <LayoutGrid className="w-5 h-5" /> FERRAMENTAS PRO
+          </button>
+        </div>
+      </div>
 
-      {/* Menu de Ferramentas PRO */}
       {showMenu && (
-        <div className="fixed inset-0 z-50 flex items-end p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[70] flex items-end p-4 animate-fade-in">
            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMenu(false)}></div>
            <div className="relative w-full bg-white rounded-3xl overflow-hidden animate-fade-in-up shadow-2xl">
               <div className="p-6 border-b flex justify-between items-center bg-slate-50">
@@ -307,23 +363,10 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-300" />
                 </button>
-               
               </div>
            </div>
         </div>
       )}
-
-      {/* Floating Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50">
-        <div className="max-w-md mx-auto flex gap-3">
-          <a href={`https://wa.me/?text=${generateWhatsAppText()}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
-            <Share2 className="w-5 h-5" /> COMPARTILHAR
-          </a>
-          <button onClick={() => setShowMenu(true)} className="flex-1 bg-slate-900 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
-            <LayoutGrid className="w-5 h-5" /> FERRAMENTAS PRO
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
