@@ -110,6 +110,7 @@ const App: React.FC = () => {
       setAppState(AppState.LOGIN);
       return;
     }
+    setIsSubmitting(true);
     try {
       const userWithCredits = await authService.consumeCredit(user);
       if (!userWithCredits) {
@@ -147,10 +148,11 @@ const App: React.FC = () => {
   };
 
   const resetApp = () => {
+    window.history.pushState({}, '', '/');
     setAppState(AppState.FORM);
     setResult(null);
-    setVehicleData(null);
     setError(null);
+    setIsSubmitting(false);
   };
 
   const handleSelectFromDirectory = (brand: string, model: string) => {
@@ -271,4 +273,8 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+function setIsSubmitting(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}
 
