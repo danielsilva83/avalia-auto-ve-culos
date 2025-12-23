@@ -90,6 +90,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     };
 
     return (
+      
       <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in">
         <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
           <button onClick={() => setActiveTool(null)} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
@@ -134,14 +135,16 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                   <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300' : 'text-slate-700'}`}>
                     {toolContent}
                   </div>
-                  {activeTool === 'dossier' && (
-                    <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
-                      <button onClick={() => window.print()} className="w-full py-4 bg-white text-slate-900 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-lg">
-                         <Printer className="w-5 h-5" /> IMPRIMIR / SALVAR PDF
-                      </button>
-                      <p className="text-center text-[9px] text-slate-500 uppercase font-black">Este documento não substitui vistoria cautelar física.</p>
-                    </div>
-                  )}
+                 {activeTool === 'dossier' && (
+                      <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
+                        {/* O botão de imprimir não deve estar aqui se já estiver no topo, 
+                            mas se quiser manter em ambos, adicione a classe no-print */}
+                        <p className="text-center text-[9px] text-slate-500 uppercase font-black">
+                          Este documento não substitui vistoria cautelar física.
+                        </p>
+                      </div>
+                    )}
+                  
                 </div>
               )}
             </div>
@@ -154,7 +157,34 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   return (
     <div className="w-full max-w-md mx-auto space-y-6 pb-32 animate-fade-in">
       <ToolOverlay />
-
+<style dangerouslySetInnerHTML={{ __html: `
+  @media print {
+    /* Remove scrollbars e fixa altura para impressão */
+    .fixed, .overflow-y-auto { 
+      position: static !important; 
+      overflow: visible !important; 
+      display: block !important; 
+    }
+    /* Esconde elementos desnecessários */
+    header, .no-print, button { display: none !important; }
+    
+    /* Garante que o dossiê ocupe o espaço correto */
+    #printable-dossier {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      background-color: #0f172a !important; /* Cor slate-900 */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    /* Evita quebra de textos no meio de uma linha */
+    .whitespace-pre-wrap {
+      page-break-inside: auto;
+    }
+  }
+`}} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button onClick={onReset} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
