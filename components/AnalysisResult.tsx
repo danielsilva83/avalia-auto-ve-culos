@@ -266,6 +266,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                 </button>
               </div>
               <div className="p-3 grid gap-2 max-h-[70vh] overflow-y-auto">
+                 <button onClick={() => openTool('profit')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-all text-left group border border-transparent hover:border-green-100">
+                  <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition-transform"><Calculator className="w-6 h-6" /></div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900">Lucro na Veia</p>
+                    <p className="text-[10px] text-slate-400 uppercase font-black">Calculadora de ROI</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-300" />
+                </button>
                 <button onClick={() => openTool('dossier')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-all text-left group border border-transparent hover:border-blue-100">
                   <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"><FileText className="w-6 h-6" /></div>
                   <div className="flex-1">
@@ -298,14 +306,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-300" />
                 </button>
-                <button onClick={() => openTool('profit')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-all text-left group border border-transparent hover:border-green-100">
-                  <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition-transform"><Calculator className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Lucro na Veia</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Calculadora de ROI</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
+               
               </div>
            </div>
         </div>
