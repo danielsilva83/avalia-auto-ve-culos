@@ -193,7 +193,6 @@ const App: React.FC = () => {
               >
                 {user.isPro ? <><Star className="w-3 h-3 fill-current" /> PRO</> : 'UPGRADE'}
               </div>
- 
 
               <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-600 transition-colors">
                 <LogOut className="w-5 h-5" />
@@ -201,23 +200,8 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
-        
       </header>
-           {appState === AppState.FORM && user && (
-                    <div className="animate-fade-in-up">
-                      <div className="mb-6 text-center">
-                        <h2 className="text-2xl font-bold text-gray-800">AvalIA AI {user.name.split(' ')[0]}</h2>
-                        <p className="text-gray-500 mt-1 text-sm">
-                          Sua IA de mercado em <strong>{selectedUf}</strong> está pronta.
-                        </p>
-                      </div>
-                      <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10 mb-6">
-                        <Sparkles className="w-5 h-5" />
-                        <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
-                      </div>
-                      <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
-                    </div>
-                  )}
+
       <main className="max-w-md mx-auto px-4 py-8">
         {appState === AppState.ERROR && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center space-y-4 animate-fade-in">
@@ -240,6 +224,10 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-bold">Olá, {user.name.split(' ')[0]}</h2>
               <p className="text-gray-500 text-sm">Pronto para uma nova avaliação em <strong>{selectedUf}</strong>?</p>
             </div>
+               <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10 mb-6">
+                        <Sparkles className="w-5 h-5" />
+                        <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
+                      </div>
             <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
             <div className="mt-8 text-center">
               <button 
