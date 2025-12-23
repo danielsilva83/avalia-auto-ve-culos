@@ -136,13 +136,13 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                     {toolContent}
                   </div>
                  {activeTool === 'dossier' && (
-                      <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
-                        {/* O botão de imprimir não deve estar aqui se já estiver no topo, 
-                            mas se quiser manter em ambos, adicione a classe no-print */}
-                        <p className="text-center text-[9px] text-slate-500 uppercase font-black">
-                          Este documento não substitui vistoria cautelar física.
-                        </p>
-                      </div>
+                 
+                    <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
+                      <button onClick={() => window.print()} className="w-full py-4 bg-white text-slate-900 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-lg">
+                         <Printer className="w-5 h-5" /> IMPRIMIR / SALVAR PDF
+                      </button>
+                      <p className="text-center text-[9px] text-slate-500 uppercase font-black">Este documento não substitui vistoria cautelar física.</p>
+                    </div>
                     )}
                   
                 </div>
