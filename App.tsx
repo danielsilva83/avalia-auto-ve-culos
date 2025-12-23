@@ -219,7 +219,7 @@ const App: React.FC = () => {
                 <MapPin className="w-3 h-3" /> {selectedUf}
               </div>
               
-              <div 
+               <div 
                 onClick={() => setAppState(AppState.PRICING)}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-colors ${
                   user.isPro 
