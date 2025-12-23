@@ -183,7 +183,7 @@ const App: React.FC = () => {
                 {user.isPro ? (
                   <><Star className="w-3 h-3 fill-current" /> PRO</>
                 ) : (
-                  <>{user.credits} CRÉDITOS - ATIVE PRÓ</>
+                  <>ATIVE Planos PRÓ AQUI</>
                 )}
               </div>
 
@@ -206,7 +206,7 @@ const App: React.FC = () => {
         {appState === AppState.FORM && user && (
           <div className="animate-fade-in-up">
             <div className="mb-6 text-center">
-              <h2 className="text-2xl font-bold text-gray-800">Olá, {user.name.split(' ')[0]}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">AvalIA AI {user.name.split(' ')[0]}</h2>
               <p className="text-gray-500 mt-1 text-sm">
                 Sua IA de mercado em <strong>{selectedUf}</strong> está pronta.
               </p>
