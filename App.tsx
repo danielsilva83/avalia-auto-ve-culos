@@ -148,7 +148,13 @@ const App: React.FC = () => {
       setAppState(AppState.ERROR);
     }
   };
-
+ const startEvaluationFromSeo = () => {
+    if (user) {
+      setAppState(AppState.FORM);
+    } else {
+      setAppState(AppState.LOGIN);
+    }
+  };
   const resetApp = () => {
     setAppState(AppState.FORM);
     setResult(null);
