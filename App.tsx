@@ -4,11 +4,12 @@ import VehicleForm from './components/PropertyForm';
 import AnalysisResult from './components/AnalysisResult';
 import LoginScreen from './components/LoginScreen';
 import PricingModal from './components/PricingModal';
+import SeoModelPage from './components/SeoModelPage';
+import ModelDirectory from './components/ModelDirectory';
 import { analyzeVehicle } from './services/geminiService';
 import { authService } from './services/authService';
 import { supabase } from './services/supabaseClient';
 import { VehicleFormData, AnalysisResponse, AppState, User } from './types';
-//import { Car, LogOut, Star, MapPin } from 'lucide-react';
 import { Car, LogOut, Star, MapPin, ChevronLeft, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -18,17 +19,40 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [selectedUf, setSelectedUf] = useState<string>(localStorage.getItem('avalia_uf') || 'SP');
   const [vehicleData, setVehicleData] = useState<VehicleFormData | null>(null);
+  const [seoInfo, setSeoInfo] = useState<{brand: string, model: string} | null>(null);
+  
   const isInitializing = useRef(true);
+
+  // Função para detectar rotas de SEO
+  const checkSeoRoutes = useCallback(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/modelo/')) {
+      const parts = path.split('/');
+      if (parts.length >= 4) {
+        setSeoInfo({ brand: parts[2], model: parts[3] });
+        return AppState.SEO_MODEL_PAGE;
+      }
+    }
+    if (path === '/diretorio') {
+      return AppState.SEO_DIRECTORY;
+    }
+    return null;
+  }, []);
 
   const syncUserSession = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
+      const seoRoute = checkSeoRoutes();
+
       if (currentUser) {
         setUser(currentUser);
-        setAppState(AppState.FORM);
+        // Se estiver logado, mas veio por uma rota de SEO, mantém na SEO até ele clicar em "Avaliar"
+        setAppState(seoRoute || AppState.FORM);
       } else {
         setUser(null);
-        setAppState(AppState.LOGIN);
+        // Se NÃO estiver logado, mas for uma rota de SEO, exibe a SEO_PAGE (Pública)
+        // Caso contrário, vai para o Login
+        setAppState(seoRoute || AppState.LOGIN);
       }
     } catch (e) {
       console.error("Erro crítico na sincronização de sessão:", e);
@@ -37,12 +61,13 @@ const App: React.FC = () => {
     } finally {
       isInitializing.current = false;
     }
-  }, []);
+  }, [checkSeoRoutes]);
 
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
       if (appState === AppState.LOADING && isInitializing.current) {
-        setAppState(AppState.LOGIN);
+        const seoRoute = checkSeoRoutes();
+        setAppState(seoRoute || AppState.LOGIN);
         isInitializing.current = false;
       }
     }, 6000);
@@ -56,7 +81,8 @@ const App: React.FC = () => {
           await syncUserSession();
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
-          setAppState(AppState.LOGIN);
+          const seoRoute = checkSeoRoutes();
+          setAppState(seoRoute || AppState.LOGIN);
         }
       });
       subscription = data.subscription;
@@ -66,7 +92,7 @@ const App: React.FC = () => {
       clearTimeout(safetyTimeout);
       if (subscription) subscription.unsubscribe();
     };
-  }, [syncUserSession]);
+  }, [syncUserSession, checkSeoRoutes, appState]);
 
   const handleLogin = async (uf: string) => {
     setError(null);
@@ -93,16 +119,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpgradeSuccess = async () => {
-    const updatedUser = await authService.getCurrentUser();
-    if (updatedUser) {
-      setUser(updatedUser);
-    }
-    setAppState(AppState.FORM);
-  };
-
   const handleFormSubmit = async (data: VehicleFormData) => {
-    if (!user) return;
+    if (!user) {
+      setAppState(AppState.LOGIN);
+      return;
+    }
     if (appState === AppState.LOADING) return;
 
     try {
@@ -117,7 +138,6 @@ const App: React.FC = () => {
       setAppState(AppState.LOADING);
       setError(null);
 
-      // Persiste a UF se ela mudou no form
       localStorage.setItem('avalia_uf', data.uf);
       setSelectedUf(data.uf);
       setVehicleData(data);
@@ -131,11 +151,43 @@ const App: React.FC = () => {
     }
   };
 
+  const startEvaluationFromSeo = () => {
+    if (user) {
+      setAppState(AppState.FORM);
+    } else {
+      setAppState(AppState.LOGIN);
+    }
+  };
+
   const resetApp = () => {
     setAppState(AppState.FORM);
     setResult(null);
     setError(null);
+    // Limpa a URL se o usuário voltar ao início
+    if (window.location.pathname !== '/') {
+        window.history.pushState({}, '', '/');
+    }
   };
+
+  // Renderização condicional para estados públicos (SEO)
+  if (appState === AppState.SEO_MODEL_PAGE && seoInfo) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-white border-b p-4 sticky top-0 z-40">
+           <div className="max-w-md mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
+                <Car className="w-6 h-6 text-slate-900" />
+                <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA AI</h1>
+              </div>
+              <button onClick={() => setAppState(AppState.LOGIN)} className="text-xs font-black uppercase text-blue-600">Entrar</button>
+           </div>
+        </header>
+        <main className="max-w-md mx-auto px-6 py-10 flex-1">
+          <SeoModelPage brand={seoInfo.brand} model={seoInfo.model} onStart={startEvaluationFromSeo} />
+        </main>
+      </div>
+    );
+  }
 
   if (appState === AppState.LOADING && !user) {
     return (
@@ -200,7 +252,7 @@ const App: React.FC = () => {
 
       <main className="max-w-md mx-auto px-4 py-8 relative">
         {appState === AppState.PRICING && (
-          <PricingModal onUpgrade={handleUpgradeSuccess} onClose={() => setAppState(AppState.FORM)} />
+          <PricingModal onUpgrade={() => setAppState(AppState.FORM)} onClose={() => setAppState(AppState.FORM)} />
         )}
 
         {appState === AppState.FORM && user && (
@@ -211,7 +263,7 @@ const App: React.FC = () => {
                 Sua IA de mercado em <strong>{selectedUf}</strong> está pronta.
               </p>
             </div>
-            <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10">
+            <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10 mb-6">
               <Sparkles className="w-5 h-5" />
               <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
             </div>
@@ -220,21 +272,16 @@ const App: React.FC = () => {
         )}
 
         {appState === AppState.LOADING && user && (
-           <div className="flex flex-col items-center justify-center pt-20 space-y-4 text-center">
-              <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-              <h3 className="text-lg font-medium text-gray-600">Pesquisando Mercado em {selectedUf}...</h3>
-              <p className="text-sm text-gray-400 max-w-xs">Cruzando Tabela FIPE com anúncios regionais ativos.</p>
-            <div className="flex flex-col items-center justify-center pt-20 space-y-6">
+           <div className="flex flex-col items-center justify-center pt-20 space-y-6 text-center">
               <div className="relative">
                 <div className="w-20 h-20 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
                 <Car className="absolute inset-0 m-auto w-8 h-8 text-slate-800 animate-pulse" />
-                <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"></div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-slate-800">Analisando {selectedUf}...</h3>
+                <p className="text-xs text-slate-400 max-w-xs mx-auto">Cruzando Tabela FIPE atualizada com os anúncios mais recentes da sua região.</p>
               </div>
            </div>
-           </div>
-           
         )}
 
         {appState === AppState.RESULT && result && vehicleData && (
