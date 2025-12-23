@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [seoInfo, setSeoInfo] = useState<{brand: string, model: string} | null>(null);
   
   const isInitializing = useRef(true);
+  const APP_URL = "https://www.avaliaaiautomoveis.com/";
 
   // Função para detectar rotas de SEO
   const checkSeoRoutes = useCallback(() => {
@@ -46,12 +47,9 @@ const App: React.FC = () => {
 
       if (currentUser) {
         setUser(currentUser);
-        // Se estiver logado, mas veio por uma rota de SEO, mantém na SEO até ele clicar em "Avaliar"
         setAppState(seoRoute || AppState.FORM);
       } else {
         setUser(null);
-        // Se NÃO estiver logado, mas for uma rota de SEO, exibe a SEO_PAGE (Pública)
-        // Caso contrário, vai para o Login
         setAppState(seoRoute || AppState.LOGIN);
       }
     } catch (e) {
@@ -151,19 +149,10 @@ const App: React.FC = () => {
     }
   };
 
-  const startEvaluationFromSeo = () => {
-    if (user) {
-      setAppState(AppState.FORM);
-    } else {
-      setAppState(AppState.LOGIN);
-    }
-  };
-
   const resetApp = () => {
     setAppState(AppState.FORM);
     setResult(null);
     setError(null);
-    // Limpa a URL se o usuário voltar ao início
     if (window.location.pathname !== '/') {
         window.history.pushState({}, '', '/');
     }
@@ -175,15 +164,15 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-white border-b p-4 sticky top-0 z-40">
            <div className="max-w-md mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = APP_URL}>
                 <Car className="w-6 h-6 text-slate-900" />
                 <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA AI</h1>
               </div>
-              <button onClick={() => setAppState(AppState.LOGIN)} className="text-xs font-black uppercase text-blue-600">Entrar</button>
+              <button onClick={() => window.location.href = APP_URL} className="text-xs font-black uppercase text-blue-600">Entrar</button>
            </div>
         </header>
         <main className="max-w-md mx-auto px-6 py-10 flex-1">
-          <SeoModelPage brand={seoInfo.brand} model={seoInfo.model} onStart={startEvaluationFromSeo} />
+          <SeoModelPage brand={seoInfo.brand} model={seoInfo.model} onStart={() => window.location.href = APP_URL} />
         </main>
       </div>
     );
