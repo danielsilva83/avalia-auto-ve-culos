@@ -47,7 +47,13 @@ const App: React.FC = () => {
 
       if (currentUser) {
         setUser(currentUser);
-        setAppState(seoRoute || AppState.FORM);
+        // Evita resetar o estado se o usuário já estiver navegando (ex: na tela de Pricing)
+        setAppState(prev => {
+          if (prev === AppState.LOADING || prev === AppState.LOGIN) {
+            return seoRoute || AppState.FORM;
+          }
+          return prev;
+        });
       } else {
         setUser(null);
         setAppState(seoRoute || AppState.LOGIN);
@@ -63,11 +69,14 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
-      if (appState === AppState.LOADING && isInitializing.current) {
-        const seoRoute = checkSeoRoutes();
-        setAppState(seoRoute || AppState.LOGIN);
-        isInitializing.current = false;
-      }
+      setAppState(prev => {
+        if (prev === AppState.LOADING && isInitializing.current) {
+          const seoRoute = checkSeoRoutes();
+          isInitializing.current = false;
+          return seoRoute || AppState.LOGIN;
+        }
+        return prev;
+      });
     }, 6000);
 
     syncUserSession();
@@ -90,7 +99,7 @@ const App: React.FC = () => {
       clearTimeout(safetyTimeout);
       if (subscription) subscription.unsubscribe();
     };
-  }, [syncUserSession, checkSeoRoutes, appState]);
+  }, [syncUserSession, checkSeoRoutes]);
 
   const handleLogin = async (uf: string) => {
     setError(null);
@@ -148,13 +157,7 @@ const App: React.FC = () => {
       setAppState(AppState.ERROR);
     }
   };
- const startEvaluationFromSeo = () => {
-    if (user) {
-      setAppState(AppState.FORM);
-    } else {
-      setAppState(AppState.LOGIN);
-    }
-  };
+
   const resetApp = () => {
     setAppState(AppState.FORM);
     setResult(null);
@@ -219,7 +222,7 @@ const App: React.FC = () => {
                 <MapPin className="w-3 h-3" /> {selectedUf}
               </div>
               
-               <div 
+              <div 
                 onClick={() => setAppState(AppState.PRICING)}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-colors ${
                   user.isPro 
