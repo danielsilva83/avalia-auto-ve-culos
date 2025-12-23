@@ -26,59 +26,62 @@ const App: React.FC = () => {
   const isInitializing = useRef(true);
   const APP_URL = "https://www.avaliaaiautomoveis.com/";
 
-  const checkSeoRoutes = useCallback(() => {
+  const handleRouting = useCallback((): boolean => {
     const path = window.location.pathname;
     if (path.startsWith('/modelo/')) {
       const parts = path.split('/');
       if (parts.length >= 4) {
         setSeoInfo({ brand: parts[2], model: parts[3] });
-        return AppState.SEO_MODEL_PAGE;
+        return true;
       }
     }
     if (path === '/diretorio') {
-      return AppState.SEO_DIRECTORY;
+      return true;
     }
-    return null;
+    return false;
   }, []);
 
-  const syncUserSession = useCallback(async () => {
+   const syncUserSession = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
-      const seoRoute = checkSeoRoutes();
+      
+      // Checa se é uma rota pública de SEO antes de exigir login
+      const isPublicPage = handleRouting();
+      if (isPublicPage) return;
 
       if (currentUser) {
         setUser(currentUser);
-        setAppState(prev => {
-          if (prev === AppState.LOADING || prev === AppState.LOGIN) {
-            return seoRoute || AppState.FORM;
-          }
-          return prev;
-        });
+        setAppState(AppState.FORM);
       } else {
         setUser(null);
-        setAppState(seoRoute || AppState.LOGIN);
+        setAppState(AppState.LOGIN);
       }
     } catch (e) {
-      console.error("Erro na sincronização de sessão:", e);
+      setUser(null);
       setAppState(AppState.LOGIN);
     } finally {
       isInitializing.current = false;
     }
-  }, [checkSeoRoutes]);
+  }, []);
 
   useEffect(() => {
     syncUserSession();
+
     if (supabase) {
       const { data } = supabase.auth.onAuthStateChange(async (event) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') await syncUserSession();
-        else if (event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await syncUserSession();
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
-          setAppState(AppState.LOGIN);
+          if (!window.location.pathname.startsWith('/modelo') && window.location.pathname !== '/modelos') {
+            setAppState(AppState.LOGIN);
+          }
         }
       });
       return () => data.subscription.unsubscribe();
     }
   }, [syncUserSession]);
+
 
   const handleLogin = async (uf: string) => {
     setError(null);
@@ -268,3 +271,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
