@@ -5,9 +5,11 @@ import {
   Share2, ArrowLeft, ExternalLink, LayoutGrid, FileText, 
   Megaphone, TrendingDown, ShieldAlert, Calculator, X, 
   ChevronRight, Printer, CheckCircle2, DollarSign, Target,
-  Zap, Copy, Check, Settings2, Car, ShieldCheck, AlertTriangle
+  Zap, Copy, Check, Settings2, Car, ShieldCheck, AlertTriangle,
+  Lightbulb, MessageSquare, Tag
 } from 'lucide-react';
 import { generateToolContent } from '../services/geminiService';
+import RoiCalculator from './RoiCalculator';
 
 interface AnalysisResultProps {
   data: AnalysisResponse;
@@ -22,7 +24,6 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Link de Afiliado - Substitua pelo seu link de parceiro
   const AFFILIATE_LINK = "https://anycar.com.br/?ind=lwiVZxBshn"; 
 
   const openTool = async (type: ToolType) => {
@@ -56,50 +57,6 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     return encodeURIComponent(text);
   };
 
-  const ProfitCalculator = () => {
-    const [buyPrice, setBuyPrice] = useState(vehicleData.price * 0.85);
-    const [expenses, setExpenses] = useState(1500);
-    const expectedSale = vehicleData.price;
-    const profit = expectedSale - buyPrice - expenses;
-    const margin = (profit / buyPrice) * 100;
-
-    return (
-      <div className="space-y-6 animate-fade-in-up">
-        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase block mb-1">Preço de Compra (R$)</label>
-            <div className="relative">
-              <input type="number" value={buyPrice} onChange={e => setBuyPrice(Number(e.target.value))} className="w-full p-3 pl-10 rounded-xl border font-bold outline-none focus:ring-2 focus:ring-slate-900" />
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase block mb-1">Gastos Estimados (Estética/Mecânica)</label>
-            <div className="relative">
-              <input type="number" value={expenses} onChange={e => setExpenses(Number(e.target.value))} className="w-full p-3 pl-10 rounded-xl border font-bold outline-none focus:ring-2 focus:ring-slate-900" />
-              <Settings2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-          <div className="pt-2 border-t flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-500 uppercase">Venda Projetada (IA):</span>
-            <span className="font-black text-slate-900">R$ {expectedSale.toLocaleString('pt-BR')}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-green-600 p-4 rounded-2xl text-white shadow-lg shadow-green-900/10">
-            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Lucro Estimado</p>
-            <p className="text-xl font-black">R$ {profit.toLocaleString('pt-BR')}</p>
-          </div>
-          <div className="bg-blue-600 p-4 rounded-2xl text-white shadow-lg shadow-blue-900/10">
-            <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">Margem ROI</p>
-            <p className="text-xl font-black">{margin.toFixed(1)}%</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const ToolOverlay = () => {
     if (!activeTool) return null;
     const titles: Record<string, string> = {
@@ -107,7 +64,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
       ads: 'Gerador de Anúncios Turbo',
       future: 'Visão de Futuro (6-24m)',
       negotiation: 'Cards de Negociação',
-      profit: 'Calculadora de Lucro Líquido'
+      profit: 'Cálculadora de ROI Automotivo'
     };
 
     return (
@@ -135,7 +92,9 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
              </div>
           ) : (
             <div className="animate-fade-in-up">
-              {activeTool === 'profit' ? <ProfitCalculator /> : (
+              {activeTool === 'profit' ? (
+                <RoiCalculator baseSalePrice={vehicleData.price} brandModel={vehicleData.brandModel} />
+              ) : (
                 <div className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
                   {activeTool === 'dossier' && (
                     <div className="mb-8 text-center border-b border-white/10 pb-8">
@@ -181,6 +140,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         <h2 className="text-xl font-bold text-slate-800">Resultado: {vehicleData.brandModel}</h2>
       </div>
 
+      {/* Cards de Preço e Liquidez */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-slate-900 p-5 rounded-2xl text-white shadow-xl shadow-slate-900/10">
            <p className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1">Preço Sugerido</p>
@@ -192,6 +152,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
       </div>
 
+      {/* Análise Principal */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-b border-slate-100">
            <div className="flex items-center gap-2">
@@ -218,15 +179,57 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
       </div>
 
-      {/* SLOT DE AFILIADOS: CHECK DE HISTÓRICO VEICULAR */}
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100 shadow-sm animate-fade-in-up">
+      {/* Tags de CRM */}
+      {data.crmData.tags_sugeridas && data.crmData.tags_sugeridas.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-1">
+          {data.crmData.tags_sugeridas.map((tag, i) => (
+            <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+              <Tag className="w-3 h-3 text-slate-400" /> {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Scripts de Negociação */}
+      {data.salesScripts && data.salesScripts.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+          <div className="bg-blue-50 px-6 py-4 flex items-center gap-2 border-b border-blue-100">
+            <MessageSquare className="w-4 h-4 text-blue-600" />
+            <h3 className="font-black text-blue-900 uppercase text-[10px] tracking-widest">Argumentos de Venda</h3>
+          </div>
+          <div className="p-4 space-y-3">
+            {data.salesScripts.map((script, i) => (
+              <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-700 italic flex gap-3">
+                <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                "{script}"
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pílula de Conhecimento */}
+      {data.knowledgePill && (
+        <div className="bg-amber-50 rounded-2xl border border-amber-100 p-6 flex gap-4">
+          <div className="bg-amber-100 p-3 rounded-xl h-fit">
+            <Lightbulb className="w-6 h-6 text-amber-600" />
+          </div>
+          <div>
+            <h4 className="font-black text-amber-900 uppercase text-[10px] tracking-widest mb-1">Você Sabia?</h4>
+            <p className="text-xs text-amber-800 leading-relaxed">{data.knowledgePill}</p>
+          </div>
+        </div>
+      )}
+
+      {/* SLOT DE AFILIADOS */}
+      <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-6 border border-slate-200 shadow-sm animate-fade-in-up">
         <div className="flex items-start gap-4 mb-4">
-          <div className="bg-amber-100 p-2 rounded-xl">
-            <ShieldCheck className="w-6 h-6 text-amber-600" />
+          <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+            <ShieldCheck className="w-6 h-6 text-slate-900" />
           </div>
           <div>
             <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Check de Segurança Obrigatório</h4>
-            <p className="text-xs text-slate-500">Evite comprar um carro com passagem por leilão, sinistro ou bloqueio judicial.</p>
+            <p className="text-xs text-slate-500">Evite prejuízos com carros de leilão, sinistro ou bloqueio judicial.</p>
           </div>
         </div>
         
@@ -240,7 +243,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
             href={AFFILIATE_LINK} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 uppercase text-xs"
+            className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 uppercase text-xs"
           >
             Consultar Histórico Completo <ExternalLink className="w-4 h-4" />
           </a>
@@ -248,6 +251,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
       </div>
 
+      {/* Menu de Ferramentas PRO */}
       {showMenu && (
         <div className="fixed inset-0 z-50 flex items-end p-4 animate-fade-in">
            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMenu(false)}></div>
@@ -307,6 +311,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
       )}
 
+      {/* Floating Footer */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50">
         <div className="max-w-md mx-auto flex gap-3">
           <a href={`https://wa.me/?text=${generateWhatsAppText()}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
