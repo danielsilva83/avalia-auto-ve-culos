@@ -74,30 +74,31 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     onSubmit(formData);
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-      <div className="bg-slate-900 p-6 text-white">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Car className="w-6 h-6" />
-          Nova Avaliação
+    <div className="w-full max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 animate-fade-in-up">
+      <div className="bg-slate-900 p-8 text-white">
+        <h2 className="text-2xl font-black flex items-center gap-3 tracking-tighter">
+          <Car className="w-7 h-7 text-blue-400" />
+          NOVA AVALIAÇÃO
         </h2>
-        <p className="text-slate-300 text-sm mt-1">Personalizada para o estado de {formData.uf}.</p>
+        <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">Base de Dados Regional: {formData.uf}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="p-8 space-y-6">
         
         {/* Transaction Type Toggle */}
-        <div className="flex bg-gray-100 p-1 rounded-lg">
+        <div className="flex bg-gray-100 p-1.5 rounded-2xl">
           <button
             type="button"
             onClick={() => setTransactionType('venda')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
               formData.transactionType === 'venda' 
                 ? 'bg-white text-slate-900 shadow-sm' 
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <Tag className="w-4 h-4" /> Vender
@@ -105,10 +106,10 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           <button
             type="button"
             onClick={() => setTransactionType('compra')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
               formData.transactionType === 'compra' 
                 ? 'bg-white text-slate-900 shadow-sm' 
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             <DollarSign className="w-4 h-4" /> Comprar
@@ -118,7 +119,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
         {/* Modelo e UF */}
         <div className="grid grid-cols-4 gap-4">
           <div className="col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Modelo do Veículo</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Marca e Modelo</label>
             <div className="relative">
               <input
                 type="text"
@@ -127,18 +128,18 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
                 required
                 value={formData.brandModel}
                 onChange={handleChange}
-                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-800 placeholder:text-slate-300 transition-all"
               />
-              <Car className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <Car className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">UF</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">UF</label>
             <select
               name="uf"
               value={formData.uf}
               onChange={handleChange}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-slate-800 appearance-none text-center"
             >
               {BRAZIL_STATES.map(s => <option key={s.uf} value={s.uf}>{s.uf}</option>)}
             </select>
@@ -148,7 +149,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
         {/* Grid Ano e KM */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ano Modelo</label>
             <div className="relative">
               <input
                 type="number"
@@ -158,26 +159,26 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
                 max={new Date().getFullYear() + 1}
                 value={formData.year}
                 onChange={handleChange}
-                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-bold"
               />
-              <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">KM Atual</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Quilometragem</label>
             <div className="relative">
               <input
                 type="number"
                 name="mileage"
                 required
                 step="1000"
-                placeholder="1000"
+                min="0"
                 value={formData.mileage}
                 onChange={handleChange}
-                className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-4 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-bold"
               />
-              <Gauge className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <Gauge className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
           </div>
         </div>
@@ -185,32 +186,32 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
         {/* Grid Transmissão e Combustível */}
         <div className="grid grid-cols-2 gap-4">
            <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Câmbio</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Câmbio</label>
             <div className="relative">
               <select
                 name="transmission"
                 value={formData.transmission}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-bold"
               >
                 <option>Automático</option>
                 <option>Manual</option>
                 <option>CVT</option>
                 <option>Automatizado</option>
               </select>
-              <div className="absolute right-3 top-3 pointer-events-none text-gray-400">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <Settings2 className="w-4 h-4" />
               </div>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Combustível</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Combustível</label>
             <div className="relative">
               <select
                 name="fuel"
                 value={formData.fuel}
                 onChange={handleChange}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-bold"
               >
                 <option>Flex</option>
                 <option>Gasolina</option>
@@ -218,46 +219,16 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
                 <option>Híbrido</option>
                 <option>Elétrico</option>
               </select>
-              <div className="absolute right-3 top-3 pointer-events-none">
-                <Fuel className="w-4 h-4 text-gray-400" />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <Fuel className="w-4 h-4 text-slate-400" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Estado e Cor */}
-        <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Conservação</label>
-              <select
-                name="condition"
-                value={formData.condition}
-                onChange={handleChange}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option>Excelente</option>
-                <option>Bom</option>
-                <option>Regular</option>
-                <option>Ruim</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-              <input
-                type="text"
-                name="color"
-                placeholder="Ex: Prata"
-                required
-                value={formData.color}
-                onChange={handleChange}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-        </div>
-
         {/* Preço */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
             Preço {formData.transactionType === 'venda' ? 'Desejado' : 'Ofertado'} (R$)
           </label>
           <div className="relative">
@@ -265,39 +236,46 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
               type="number"
               name="price"
               required
-              min="0"
-              placeholder="1.000,00"
-              step="1000"
+              min="1"
+              placeholder="Ex: 55000"
               value={formData.price || ''}
               onChange={handleChange}
-              className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-gray-800"
+              className="w-full p-5 pl-14 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-lg text-slate-900 placeholder:text-slate-300"
             />
-            <DollarSign className="absolute left-3 top-3 w-5 h-5 text-green-600" />
+            <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-emerald-600" />
           </div>
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full mt-2 py-4 rounded-lg font-bold text-white shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] ${
-            isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-900'
+          className={`w-full py-5 rounded-2xl font-black text-white shadow-xl transition-all transform active:scale-[0.98] uppercase tracking-widest text-xs flex items-center justify-center gap-3 ${
+            isLoading 
+              ? 'bg-slate-400 cursor-not-allowed' 
+              : 'bg-slate-900 hover:bg-black hover:shadow-slate-200'
           }`}
         >
           {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
+            <>
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Analisando...
-            </span>
+              PROCESSANDO...
+            </>
           ) : (
-            'Avaliar Agora'
+            <>AVALIAR AGORA <ArrowRight className="w-4 h-4" /></>
           )}
         </button>
       </form>
     </div>
   );
 };
+
+const ArrowRight = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+  </svg>
+);
 
 export default VehicleForm;
