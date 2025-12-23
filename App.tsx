@@ -221,7 +221,9 @@ const App: React.FC = () => {
 
         {appState === AppState.LOADING && user && (
            <div className="flex flex-col items-center justify-center pt-20 space-y-4 text-center">
-              
+              <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+              <h3 className="text-lg font-medium text-gray-600">Pesquisando Mercado em {selectedUf}...</h3>
+              <p className="text-sm text-gray-400 max-w-xs">Cruzando Tabela FIPE com anúncios regionais ativos.</p>
             <div className="flex flex-col items-center justify-center pt-20 space-y-6">
               <div className="relative">
                 <div className="w-20 h-20 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
@@ -229,8 +231,6 @@ const App: React.FC = () => {
                 <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
                 <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                 <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"></div>
-                 <h3 className="text-lg font-medium text-gray-600">Pesquisando Mercado em {selectedUf}...</h3>
-              <p className="text-sm text-gray-400 max-w-xs">Cruzando Tabela FIPE com anúncios regionais ativos.</p>
               </div>
            </div>
            </div>
