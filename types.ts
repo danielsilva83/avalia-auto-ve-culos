@@ -50,7 +50,9 @@ export enum AppState {
   LOADING = 'LOADING',
   RESULT = 'RESULT',
   ERROR = 'ERROR',
-  PRICING = 'PRICING'
+  PRICING = 'PRICING',
+  SEO_DIRECTORY = 'SEO_DIRECTORY',
+  SEO_MODEL_PAGE = 'SEO_MODEL_PAGE'
 }
 
 export interface PixPaymentResponse {
