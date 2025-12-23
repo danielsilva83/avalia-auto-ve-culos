@@ -8,7 +8,8 @@ import { analyzeVehicle } from './services/geminiService';
 import { authService } from './services/authService';
 import { supabase } from './services/supabaseClient';
 import { VehicleFormData, AnalysisResponse, AppState, User } from './types';
-import { Car, LogOut, Star, MapPin } from 'lucide-react';
+//import { Car, LogOut, Star, MapPin } from 'lucide-react';
+import { Car, LogOut, Star, MapPin, ChevronLeft, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LOADING);
@@ -210,6 +211,10 @@ const App: React.FC = () => {
                 Sua IA de mercado em <strong>{selectedUf}</strong> está pronta.
               </p>
             </div>
+            <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10">
+              <Sparkles className="w-5 h-5" />
+              <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
+            </div>
             <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
           </div>
         )}
@@ -219,7 +224,17 @@ const App: React.FC = () => {
               <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
               <h3 className="text-lg font-medium text-gray-600">Pesquisando Mercado em {selectedUf}...</h3>
               <p className="text-sm text-gray-400 max-w-xs">Cruzando Tabela FIPE com anúncios regionais ativos.</p>
+            <div className="flex flex-col items-center justify-center pt-20 space-y-6">
+              <div className="relative">
+                <div className="w-20 h-20 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
+                <Car className="absolute inset-0 m-auto w-8 h-8 text-slate-800 animate-pulse" />
+                <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"></div>
+              </div>
            </div>
+           </div>
+           
         )}
 
         {appState === AppState.RESULT && result && vehicleData && (
@@ -228,12 +243,19 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {appState === AppState.ERROR && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center space-y-4">
-            <div className="text-red-500 text-5xl mb-2">⚠️</div>
-            <h3 className="text-red-800 font-bold text-lg">Erro na Análise</h3>
-            <p className="text-red-600 text-sm">{error}</p>
-            <button onClick={resetApp} className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg">Tentar Novamente</button>
+         {appState === AppState.ERROR && (
+          <div className="p-8 text-center bg-white rounded-[2rem] border border-red-100 shadow-xl shadow-red-900/5 animate-fade-in">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h3 className="text-slate-900 font-black uppercase text-sm mb-2">Falha na Inteligência</h3>
+            <p className="text-xs text-gray-500 leading-relaxed mb-8">{error}</p>
+            <button 
+              onClick={resetApp} 
+              className="w-full bg-slate-900 text-white py-4 rounded-xl font-black shadow-lg shadow-slate-200 active:scale-95 transition-transform"
+            >
+              Tentar Novamente
+            </button>
           </div>
         )}
       </main>
