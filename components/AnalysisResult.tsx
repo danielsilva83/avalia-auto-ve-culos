@@ -78,7 +78,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     };
 
     return (
-      <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in print:p-0">
+      <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in print:relative print:block print:bg-white">
         <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10 print:hidden">
           <button onClick={() => setActiveTool(null)} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
             <ArrowLeft className="w-6 h-6" />
@@ -94,49 +94,51 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-32 print:p-0 print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-6 pb-32 print:p-0 print:overflow-visible print:block">
           {isToolLoading ? (
-             <div className="flex flex-col items-center justify-center h-64 space-y-4">
+             <div className="flex flex-col items-center justify-center h-64 space-y-4 print:hidden">
                 <div className="w-12 h-12 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"></div>
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Gerando Inteligência...</p>
              </div>
           ) : (
-            <div className="animate-fade-in-up">
+            <div className="animate-fade-in-up print:animate-none print:block">
               {activeTool === 'profit' ? (
                 <RoiCalculator baseSalePrice={vehicleData.price} brandModel={vehicleData.brandModel} />
               ) : (
-                <div id="printable-dossier" className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800 print:bg-white print:text-black print:p-4 print:border-none print:shadow-none' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
+                <div id="printable-dossier" className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none print:block' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
                   {activeTool === 'dossier' && (
-                    <div className="mb-8 text-center border-b border-white/10 pb-8 print:border-slate-200">
+                    <div className="mb-8 text-center border-b border-white/10 pb-8 print:border-slate-200 print:mb-6 print:pb-6 print:block">
                        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl print:hidden">
                           <Car className="w-10 h-10 text-white" />
                        </div>
-                       <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic print:text-black">Laudo de Avaliação</h1>
+                       <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic print:text-black print:text-2xl">Laudo de Avaliação</h1>
                        <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest print:text-slate-500">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
-                       <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold">
+                       <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold print:mt-4">
                           <div className="bg-white/5 p-2 rounded uppercase border border-white/5 print:border-slate-200 print:bg-slate-50 print:text-black">{vehicleData.brandModel}</div>
                           <div className="bg-white/5 p-2 rounded uppercase border border-white/5 print:border-slate-200 print:bg-slate-50 print:text-black">Ano {vehicleData.year}</div>
                        </div>
                     </div>
                   )}
-                  <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300 print:text-slate-800' : 'text-slate-700'}`}>
+                  <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300 print:text-black print:text-sm' : 'text-slate-700'}`}>
                     {toolContent}
                   </div>
                   {activeTool === 'dossier' && (
-                    <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4 print:hidden">
-                      <button 
-                        onClick={shareDossierWhatsApp} 
-                        className="w-full py-4 bg-green-600 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 transition-colors shadow-lg"
-                      >
-                         <Send className="w-5 h-5" /> COMPARTILHAR NO WHATSAPP
-                      </button>
-                      <button 
-                        onClick={() => window.print()} 
-                        className="w-full py-4 bg-white/10 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/10"
-                      >
-                         <Printer className="w-5 h-5" /> SALVAR COMO PDF
-                      </button>
-                      <p className="text-center text-[9px] text-slate-500 uppercase font-black">Este documento não substitui vistoria cautelar física.</p>
+                    <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4 print:mt-8 print:pt-4 print:border-slate-100">
+                      <div className="print:hidden flex flex-col gap-4">
+                        <button 
+                          onClick={shareDossierWhatsApp} 
+                          className="w-full py-4 bg-green-600 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 transition-colors shadow-lg"
+                        >
+                           <Send className="w-5 h-5" /> COMPARTILHAR NO WHATSAPP
+                        </button>
+                        <button 
+                          onClick={() => window.print()} 
+                          className="w-full py-4 bg-white/10 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/10"
+                        >
+                           <Printer className="w-5 h-5" /> SALVAR COMO PDF
+                        </button>
+                      </div>
+                      <p className="text-center text-[9px] text-slate-500 uppercase font-black print:text-left print:text-[8px] print:mt-4">Este documento é um relatório informativo baseado em inteligência artificial regional e não substitui vistoria cautelar física ou perícia técnica presencial.</p>
                     </div>
                   )}
                 </div>
@@ -146,9 +148,34 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            body * { visibility: hidden; }
-            #printable-dossier, #printable-dossier * { visibility: visible; }
-            #printable-dossier { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            @page { margin: 1.5cm; }
+            body { background: white !important; color: black !important; }
+            nav, header, footer, .print\\:hidden { display: none !important; }
+            #printable-dossier { 
+              visibility: visible !important; 
+              display: block !important;
+              position: relative !important;
+              width: 100% !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+              color: black !important;
+            }
+            #printable-dossier * { 
+              visibility: visible !important; 
+              color: black !important;
+              background: transparent !important;
+              overflow: visible !important;
+            }
+            /* Esconde tudo exceto o dossiê */
+            body > *:not(.fixed) { display: none !important; }
+            .fixed:has(#printable-dossier) { 
+              position: relative !important; 
+              display: block !important; 
+              background: white !important;
+              z-index: auto !important;
+            }
           }
         `}} />
       </div>
@@ -338,7 +365,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
       )}
 
       {/* Floating Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-100 z-50 print:hidden">
         <div className="max-w-md mx-auto flex gap-3">
           <a href={`https://wa.me/?text=${generateWhatsAppText()}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
             <Share2 className="w-5 h-5" /> COMPARTILHAR
