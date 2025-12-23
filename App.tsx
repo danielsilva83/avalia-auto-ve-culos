@@ -62,7 +62,7 @@ const App: React.FC = () => {
     } finally {
       isInitializing.current = false;
     }
-  }, []);
+  }, [handleRouting]);
 
   useEffect(() => {
     syncUserSession();
@@ -82,29 +82,11 @@ const App: React.FC = () => {
     }
   }, [syncUserSession]);
 
-
   const handleLogin = async (uf: string) => {
-    setError(null);
-    try {
-      setSelectedUf(uf);
-      localStorage.setItem('avalia_uf', uf);
-      await authService.login(); 
-    } catch (e: any) {
-      setError(e.message || "Falha ao iniciar login.");
-    }
+    setSelectedUf(uf);
+    localStorage.setItem('avalia_uf', uf);
+    await authService.login(); 
   };
-
-  const handleLogout = async () => {
-    try {
-      setAppState(AppState.LOADING);
-      await authService.logout();
-    } finally {
-      setUser(null);
-      setResult(null);
-      setAppState(AppState.LOGIN);
-    }
-  };
-
   const handleFormSubmit = async (data: VehicleFormData) => {
     if (!user) {
       setAppState(AppState.LOGIN);
@@ -170,6 +152,13 @@ const App: React.FC = () => {
   }
 
   if (appState === AppState.LOGIN) return <LoginScreen onLogin={handleLogin} error={error} />;
+
+  const handleLogout = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    await authService.logout();
+    setUser(null);
+    setAppState(AppState.LOGIN);
+    resetApp();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
