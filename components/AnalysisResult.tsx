@@ -113,12 +113,24 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Gerando Inteligência...</p>
              </div>
           ) : (
-            
             <div className="animate-fade-in-up">
               {activeTool === 'profit' ? (
                 <RoiCalculator baseSalePrice={vehicleData.price} brandModel={vehicleData.brandModel} />
               ) : (
-                <>
+                <div className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
+                  {activeTool === 'dossier' && (
+                    <div className="mb-8 text-center border-b border-white/10 pb-8">
+                       <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+                          <Car className="w-10 h-10 text-white" />
+                       </div>
+                       <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic">Laudo de Avaliação</h1>
+                       <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
+                       <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold">
+                          <div className="bg-white/5 p-2 rounded uppercase">{vehicleData.brandModel}</div>
+                          <div className="bg-white/5 p-2 rounded uppercase">Ano {vehicleData.year}</div>
+                       </div>
+                    </div>
+                  )}
                   <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300' : 'text-slate-700'}`}>
                     {toolContent}
                   </div>
@@ -130,22 +142,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                       <p className="text-center text-[9px] text-slate-500 uppercase font-black">Este documento não substitui vistoria cautelar física.</p>
                     </div>
                   )}
-                  <div className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
-                    {activeTool === 'dossier' && (
-                      <div className="mb-8 text-center border-b border-white/10 pb-8">
-                         <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-                            <Car className="w-10 h-10 text-white" />
-                         </div>
-                         <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic">Laudo de Avaliação</h1>
-                         <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
-                         <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold">
-                            <div className="bg-white/5 p-2 rounded uppercase">{vehicleData.brandModel}</div>
-                            <div className="bg-white/5 p-2 rounded uppercase">Ano {vehicleData.year}</div>
-                         </div>
-                      </div>
-                    )}
-                  </div>
-                </>
+                </div>
               )}
             </div>
           )}
