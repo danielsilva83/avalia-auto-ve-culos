@@ -78,7 +78,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     };
 
     return (
-      <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in print:relative print:block print:bg-white">
+      <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in print:static print:block print:bg-white print:z-auto">
         <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10 print:hidden">
           <button onClick={() => setActiveTool(null)} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
             <ArrowLeft className="w-6 h-6" />
@@ -148,33 +148,54 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
         </div>
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            @page { margin: 1.5cm; }
-            body { background: white !important; color: black !important; }
-            nav, header, footer, .print\\:hidden { display: none !important; }
+            /* Forçar fundo branco e texto preto em todos os navegadores */
+            html, body { 
+              background: white !important; 
+              color: black !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              overflow: visible !important;
+            }
+            
+            /* Esconder a interface do App */
+            #root > *:not(.fixed), 
+            header, nav, footer, button, .print\\:hidden { 
+              display: none !important; 
+            }
+
+            /* Resetar o container do Dossiê */
+            .fixed.inset-0.z-\\[60\\] {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              height: auto !important;
+              overflow: visible !important;
+              z-index: auto !important;
+              background: white !important;
+            }
+
             #printable-dossier { 
-              visibility: visible !important; 
               display: block !important;
               position: relative !important;
               width: 100% !important;
-              height: auto !important;
               margin: 0 !important;
-              padding: 0 !important;
+              padding: 1.5cm !important;
               background: white !important;
               color: black !important;
-            }
-            #printable-dossier * { 
-              visibility: visible !important; 
-              color: black !important;
-              background: transparent !important;
+              box-shadow: none !important;
+              border: none !important;
               overflow: visible !important;
             }
-            /* Esconde tudo exceto o dossiê */
-            body > *:not(.fixed) { display: none !important; }
-            .fixed:has(#printable-dossier) { 
-              position: relative !important; 
-              display: block !important; 
-              background: white !important;
-              z-index: auto !important;
+
+            #printable-dossier * {
+              color: black !important;
+              background: transparent !important;
+            }
+
+            @page {
+              margin: 1cm;
+              size: auto;
             }
           }
         `}} />
