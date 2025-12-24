@@ -1,109 +1,119 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { VehicleFormData, AnalysisResponse, ToolType, VehicleImage } from "../types";
+import { VehicleFormData, AnalysisResponse, ToolType } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const parseResponse = (text: string): AnalysisResponse => {
+  const result: AnalysisResponse = {
+    priceAnalysis: "",
+    salesScripts: [],
+    knowledgePill: "",
+    crmData: {
+      resumo_veiculo: "Erro na análise",
+      faixa_preco_sugerida: "N/A",
+      nivel_dificuldade_venda: "N/A",
+      tags_sugeridas: []
+    }
+  };
+
+  try {
+    const sections = text.split(/\[\[SEÇÃO \d\]\]/);
+    if (sections.length > 1) result.priceAnalysis = sections[1].trim();
+
+    const scriptMatch = text.match(/\[\[SEÇÃO 2\]\]([\s\S]*?)\[\[SEÇÃO 3\]\]/);
+    if (scriptMatch) {
+      result.salesScripts = scriptMatch[1].trim()
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 5)
+        .map(s => s.replace(/^[-*•"']\s*/, '').replace(/["']$/, ''));
+    }
+
+    const pillMatch = text.match(/\[\[SEÇÃO 3\]\]([\s\S]*?)\[\[SEÇÃO 4\]\]/);
+    if (pillMatch) result.knowledgePill = pillMatch[1].trim();
+
+    const jsonMatch = text.match(/\[\[SEÇÃO 4\]\]([\s\S]*)/);
+    if (jsonMatch) {
+      let jsonText = jsonMatch[1].trim().replace(/```json/g, '').replace(/```/g, '');
+      const start = jsonText.indexOf('{');
+      const end = jsonText.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+         try {
+            result.crmData = JSON.parse(jsonText.substring(start, end + 1));
+         } catch (e) { console.error("JSON parse error", e); }
+      }
+    }
+  } catch (error) { console.error("Error parsing response:", error); }
+  return result;
+};
 
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
-  const transactionContext = data.transactionType === 'monitoramento' ? 'MONITORAMENTO DE PATRIMÔNIO' : data.transactionType.toUpperCase();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const transactionContext = data.transactionType === 'compra' ? 'COMPRA' : 'VENDA';
   
-  const prompt = `
-    Analise o mercado para: ${data.brandModel} ${data.year}, ${data.mileage}km em ${data.city}/${data.uf}.
-    Tipo de transação: ${transactionContext}.
-    Preço base informado: R$ ${data.price.toLocaleString('pt-BR')}
+  const amenities = [
+    data.transmission, data.fuel,
+    data.isArmored ? 'Blindado' : null,
+    data.hasSunroof ? 'Teto Solar' : null,
+    data.hasLeather ? 'Couro' : null,
+    data.hasMultimedia ? 'Multimídia' : null,
+    data.hasServiceHistory ? 'Revisões em dia' : null,
+    data.singleOwner ? 'Único Dono' : null
+  ].filter(Boolean).join(', ');
 
-    USE GOOGLE SEARCH para encontrar anúncios reais hoje especificamente em ${data.city} e região metropolitana de ${data.uf}.
-    FOCO LOCAL: Justifique se o preço em ${data.city} tende a ser maior ou menor que a média estadual.
-    
-    Forneça:
-    [[SEÇÃO 1]] Análise detalhada comparando FIPE com preços reais de anúncios locais em ${data.city}.
-    [[SEÇÃO 2]] 3 Scripts de venda/negociação curtos e persuasivos.
-    [[SEÇÃO 3]] Uma pílula de conhecimento sobre a revenda deste modelo.
-    [[SEÇÃO 4]] JSON estrito com dados de CRM e tendências.
+  const prompt = `
+    Analise o veículo para **${transactionContext}** no estado de **${data.uf}**:
+    - Modelo: ${data.brandModel} | Ano: ${data.year} | KM: ${data.mileage}
+    - Diferenciais: ${amenities}
+    - Preço Base Informado: R$ ${data.price.toLocaleString('pt-BR')}
+
+    USE GOOGLE SEARCH para encontrar a Tabela FIPE atualizada e anúncios reais em ${data.uf}.
+    FOCO REGIONAL: Justifique o preço baseado na demanda e liquidez específica do estado de ${data.uf}.
   `;
 
   const systemInstruction = `
-    Você é o 'AvalIA AI', o maior especialista em precificação automotiva regional do Brasil.
-    Na [[SEÇÃO 4]], retorne SEMPRE este JSON:
-    {
-      "resumo_veiculo": "string",
-      "faixa_preco_sugerida": "R$ X a R$ Y",
-      "nivel_dificuldade_venda": "Fácil/Média/Alta",
-      "tags_sugeridas": ["tag1", "tag2"],
-      "tendencia_mercado": "alta" | "estavel" | "queda",
-      "valor_estimado_proximo_mes": "R$ ..."
-    }
+    Você é o 'AvalIA AI Automóveis', o consultor mais preciso do Brasil.
+    [[SEÇÃO 1]] Análise Detalhada de Preço e Mercado Regional em ${data.uf}.
+    [[SEÇÃO 2]] Scripts Rápidos de Negociação.
+    [[SEÇÃO 3]] Uma pílula de conhecimento sobre este modelo específico.
+    [[SEÇÃO 4]] JSON estritamente formatado: { "resumo_veiculo": "...", "faixa_preco_sugerida": "R$ X a R$ Y", "nivel_dificuldade_venda": "Fácil/Médio/Difícil", "tags_sugeridas": ["tag1", "tag2"] }
   `;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: prompt,
-    config: {
-      systemInstruction,
-      tools: [{ googleSearch: {} }]
-    }
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview", 
+      contents: prompt,
+      config: {
+        systemInstruction: systemInstruction,
+        tools: [{ googleSearch: {} }],
+        temperature: 0.7, 
+      },
+    });
 
-  return parseGeminiResponse(response);
+    const candidate = response?.candidates?.[0];
+    const groundingUrls = candidate?.groundingMetadata?.groundingChunks
+      ?.map((chunk: any) => ({ title: chunk.web?.title || "Fonte", uri: chunk.web?.uri }))
+      .filter((item: any) => item.uri);
+
+    return { ...parseResponse(response.text || ""), groundingUrls };
+  } catch (error) { throw error; }
 };
 
-export const analyzeVehicleHealth = async (images: VehicleImage[]): Promise<string> => {
-  const prompt = "Analise estas fotos de um carro (podem ser pneus, painel, motor ou lataria). Identifique sinais de desgaste, luzes de advertência ou danos que precisem de atenção imediata ou que reduzam o valor de revenda. Seja técnico e objetivo.";
+export const generateToolContent = async (type: ToolType, data: VehicleFormData): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const parts: any[] = [{ text: prompt }];
-  images.forEach(img => parts.push({ inlineData: { data: img.data, mimeType: img.mimeType } }));
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
-    contents: { parts },
-    config: { systemInstruction: "Você é um perito avaliador de vistoria cautelar." }
-  });
-
-  return response.text || "Não foi possível analisar as imagens.";
-};
-
-export const generateToolContent = async (type: ToolType, vehicle: VehicleFormData): Promise<string> => {
-  if (!type || type === 'profit') return "";
-  
-  const prompts: Record<string, string> = {
-    dossier: `Gere um Dossiê Profissional de Venda para o ${vehicle.brandModel} ${vehicle.year} em ${vehicle.city}/${vehicle.uf}. Liste diferenciais, ficha técnica resumida e por que este é um bom negócio para alguém da região.`,
-    ads: `Crie 3 modelos de anúncios (Instagram, OLX e WhatsApp) persuasivos para o ${vehicle.brandModel} ${vehicle.year}. Cite que o veículo está em ${vehicle.city}.`,
-    future: `Projete o valor deste ${vehicle.brandModel} nos próximos 12 e 24 meses baseado na economia atual de ${vehicle.city} e do estado ${vehicle.uf}.`,
-    negotiation: `Crie um guia de negociação para o dono deste ${vehicle.brandModel}. Liste as 5 principais objeções de compradores locais e como respondê-las.`
+  const toolPrompts: Record<string, string> = {
+    ads: `Gere 3 anúncios de alta conversão (um Formal, um Emocional e um Urgente) para o veículo ${data.brandModel} ${data.year} em ${data.uf}. Destaque os opcionais informados e use emojis.`,
+    future: `Com base no mercado automotivo de ${data.uf}, projete a desvalorização do ${data.brandModel} ${data.year} para os próximos 6, 12 e 24 meses. Explique os motivos técnicos e de mercado.`,
+    negotiation: `Crie 5 'Battle Cards' para quem está negociando um ${data.brandModel}. Para cada card, apresente uma objeção comum e a resposta técnica matadora para defender o preço.`,
+    dossier: `Crie um Dossiê de Venda Executivo para o ${data.brandModel} ${data.year}. Destaque por que este veículo é uma oportunidade superior considerando seus diferenciais e o mercado local de ${data.uf}.`
   };
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: prompts[type as string],
-    config: { systemInstruction: "Você é um consultor de elite em vendas automotivas." }
-  });
-
-  return response.text || "";
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: toolPrompts[type as string],
+      config: { systemInstruction: "Responda em Markdown elegante e estruturado para leitura em dispositivos móveis." }
+    });
+    return response.text || "Erro ao gerar inteligência estratégica.";
+  } catch (e) { return "Falha na comunicação com a inteligência artificial."; }
 };
-
-function parseGeminiResponse(response: any): AnalysisResponse {
-  const text = response.text || "";
-  const sections = text.split(/\[\[SEÇÃO \d\]\]/);
-  
-  const result: AnalysisResponse = {
-    priceAnalysis: sections[1]?.trim() || text,
-    salesScripts: sections[2]?.trim().split('\n').filter((s: string | any[]) => s.length > 5).map((s: string) => s.replace(/^[-*•"']\s*/, '').replace(/["']$/, '')) || [],
-    knowledgePill: sections[3]?.trim() || "",
-    crmData: { resumo_veiculo: "", faixa_preco_sugerida: "", nivel_dificuldade_venda: "", tags_sugeridas: [] }
-  };
-
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      result.crmData = JSON.parse(jsonMatch[0]);
-    } catch (e) {}
-  }
-
-  if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-    result.groundingUrls = response.candidates[0].groundingMetadata.groundingChunks
-      .filter((c: any) => c.web)
-      .map((c: any) => ({ title: c.web.title, uri: c.web.uri }));
-  }
-
-  return result;
-}
