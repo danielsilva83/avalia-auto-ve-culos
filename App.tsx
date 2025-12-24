@@ -210,21 +210,7 @@ const App: React.FC = () => {
             <Car className="w-6 h-6" />
             <h1 className="text-lg font-bold tracking-tight font-['Playfair_Display']">AvalIA AI</h1>
           </div>
-           {appState === AppState.FORM && user && (
-                      <div className="animate-fade-in-up">
-                        <div className="mb-6 text-center">
-                          <h2 className="text-2xl font-bold text-gray-800">AvalIA AI {user.name.split(' ')[0]}</h2>
-                          <p className="text-gray-500 mt-1 text-sm">
-                            Sua IA de mercado em <strong>{selectedUf}</strong> está pronta.
-                          </p>
-                        </div>
-                        <div className="bg-blue-600 p-4 rounded-2xl text-white flex items-center gap-3 shadow-lg shadow-blue-900/10 mb-6">
-                          <Sparkles className="w-5 h-5" />
-                          <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
-                        </div>
-                        <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
-                      </div>
-                    )}
+          
           {user && (
             <div className="flex items-center gap-2">
               <div 
