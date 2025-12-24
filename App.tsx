@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [selectedUf, setSelectedUf] = useState<string>(localStorage.getItem('avalia_uf') || 'SP');
   const [vehicleData, setVehicleData] = useState<VehicleFormData | null>(null);
   const [seoInfo, setSeoInfo] = useState<{brand: string, model: string} | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const isInitializing = useRef(true);
   const APP_URL = "https://www.avaliaaiautomoveis.com/";
@@ -124,8 +125,11 @@ const App: React.FC = () => {
       setAppState(AppState.LOGIN);
       return;
     }
-    if (appState === AppState.LOADING) return;
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
+    setError(null);
+
     try {
       const userWithCredits = await authService.consumeCredit(user);
       
@@ -137,31 +141,51 @@ const App: React.FC = () => {
 
       setUser(userWithCredits);
       setAppState(AppState.LOADING);
-      setError(null);
 
       localStorage.setItem('avalia_uf', data.uf);
       setSelectedUf(data.uf);
       setVehicleData(data);
 
       const response = await analyzeVehicle(data);
+      
+      // Salva no histórico automaticamente para usuários PRO
+      if (userWithCredits.isPro) {
+        try {
+          await historyService.saveConsultation(userWithCredits.id, data, response);
+        } catch (e) {
+          console.error("Erro ao salvar histórico PRO:", e);
+        }
+      }
+
       setResult(response);
       setAppState(AppState.RESULT);
     } catch (err: any) {
       setError(err.message || "Ocorreu um erro ao analisar o veículo.");
       setAppState(AppState.ERROR);
-    
-      } finally {
+    } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const openHistoryItem = (analysis: AnalysisResponse, vehicle: VehicleFormData) => {
+    setResult(analysis);
+    setVehicleData(vehicle);
+    setAppState(AppState.RESULT);
   };
 
   const resetApp = () => {
     setAppState(AppState.FORM);
     setResult(null);
+    setVehicleData(null);
     setError(null);
     if (window.location.pathname !== '/') {
         window.history.pushState({}, '', '/');
     }
+  };
+
+  const handleSelectFromDirectory = (brand: string, model: string) => {
+    setSeoInfo({ brand, model });
+    setAppState(AppState.SEO_MODEL_PAGE);
   };
 
   // Renderização condicional para estados públicos (SEO)
@@ -200,7 +224,6 @@ const App: React.FC = () => {
   if (appState === AppState.LOGIN) {
     return <LoginScreen onLogin={handleLogin} error={error} />;
   }
-  
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -219,7 +242,7 @@ const App: React.FC = () => {
               >
                 <MapPin className="w-3 h-3" /> {selectedUf}
               </div>
-                 <button 
+              <button 
                 onClick={() => setAppState(AppState.DASHBOARD)}
                 className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
                 title="Minha Garagem"
@@ -253,7 +276,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-md mx-auto px-4 py-8 relative">
-         {appState === AppState.ERROR && (
+        {appState === AppState.ERROR && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center space-y-4 animate-fade-in">
             <AlertCircle className="w-12 h-12 text-red-600 mx-auto" />
             <h3 className="font-bold text-red-900 text-lg">Ops! Ocorreu um erro</h3>
@@ -261,8 +284,13 @@ const App: React.FC = () => {
             <button onClick={resetApp} className="w-full bg-red-600 text-white font-bold py-3 rounded-xl uppercase text-xs tracking-widest">Tentar Novamente</button>
           </div>
         )}
+        
         {appState === AppState.PRICING && (
           <PricingModal onUpgrade={() => setAppState(AppState.FORM)} onClose={() => setAppState(AppState.FORM)} />
+        )}
+
+        {appState === AppState.DASHBOARD && user && (
+          <UserDashboard user={user} onSelectConsultation={openHistoryItem} onBack={resetApp} />
         )}
 
         {appState === AppState.FORM && user && (
@@ -277,7 +305,7 @@ const App: React.FC = () => {
               <Sparkles className="w-5 h-5" />
               <p className="text-xs font-bold leading-tight">Olá, {user.name.split(' ')[0]}! Você tem {user.isPro ? 'Acesso Ilimitado' : `${user.credits} créditos`} para avaliar hoje.</p>
             </div>
-            <VehicleForm onSubmit={handleFormSubmit} isLoading={false} defaultUf={selectedUf} />
+            <VehicleForm onSubmit={handleFormSubmit} isLoading={isSubmitting} defaultUf={selectedUf} />
             <div className="mt-8 text-center">
               <button 
                 onClick={() => setAppState(AppState.SEO_DIRECTORY)}
@@ -308,20 +336,8 @@ const App: React.FC = () => {
           </div>
         )}
 
-         {appState === AppState.ERROR && (
-          <div className="p-8 text-center bg-white rounded-[2rem] border border-red-100 shadow-xl shadow-red-900/5 animate-fade-in">
-            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h3 className="text-slate-900 font-black uppercase text-sm mb-2">Falha na Inteligência</h3>
-            <p className="text-xs text-gray-500 leading-relaxed mb-8">{error}</p>
-            <button 
-              onClick={resetApp} 
-              className="w-full bg-slate-900 text-white py-4 rounded-xl font-black shadow-lg shadow-slate-200 active:scale-95 transition-transform"
-            >
-              Tentar Novamente
-            </button>
-          </div>
+        {appState === AppState.SEO_DIRECTORY && (
+          <ModelDirectory onSelect={handleSelectFromDirectory} />
         )}
       </main>
     </div>
@@ -329,6 +345,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-function setIsSubmitting(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}
