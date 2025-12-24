@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import VehicleForm from './components/PropertyForm'; 
 import AnalysisResult from './components/AnalysisResult';
@@ -299,7 +298,14 @@ const App: React.FC = () => {
         )}
 
         {appState === AppState.DASHBOARD && user && (
-          <UserDashboard user={user} onSelectConsultation={openHistoryItem} onBack={resetApp} />
+          /* Fixed: Added missing required props for UserDashboard and removed invalid onBack */
+          <UserDashboard 
+            user={user} 
+            onSelectConsultation={openHistoryItem} 
+            onNewEvaluation={resetApp}
+            onStartHealthCheck={() => setAppState(AppState.HEALTH_CHECK)}
+            onLogout={handleLogout}
+          />
         )}
 
         {appState === AppState.FORM && user && (

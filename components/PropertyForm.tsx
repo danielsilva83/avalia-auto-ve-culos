@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { VehicleFormData } from '../types';
 import { 
   Car, Calendar, Gauge, Fuel, DollarSign, 
-  Settings2, Tag, ShieldCheck, CheckCircle2,
-  Disc, Sun, Radio, Armchair, MapPin
+  Settings2, Tag, ShieldCheck, MapPin, ArrowRight
 } from 'lucide-react';
 
 interface VehicleFormProps {
@@ -37,6 +36,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
     color: '',
     condition: 'Bom',
     price: 0,
+    city: '', // Novo campo
     uf: defaultUf || 'SP',
     isArmored: false,
     hasLeather: false,
@@ -85,7 +85,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           <Car className="w-7 h-7 text-blue-400" />
           NOVA AVALIAÇÃO
         </h2>
-        <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">Base de Dados Regional: {formData.uf}</p>
+        <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">Busca Regionalizada em Tempo Real</p>
       </div>
 
       <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -116,9 +116,9 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           </button>
         </div>
 
-        {/* Modelo e UF */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="col-span-3">
+        {/* Modelo */}
+        <div className="space-y-4">
+          <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Marca e Modelo</label>
             <div className="relative">
               <input
@@ -133,16 +133,35 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
               <Car className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
           </div>
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">UF</label>
-            <select
-              name="uf"
-              value={formData.uf}
-              onChange={handleChange}
-              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-slate-800 appearance-none text-center"
-            >
-              {BRAZIL_STATES.map(s => <option key={s.uf} value={s.uf}>{s.uf}</option>)}
-            </select>
+
+          {/* Cidade e UF Grid */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Município</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="Sua Cidade"
+                  required
+                  value={formData.city}
+                  onChange={handleChange}
+                  className="w-full p-4 pl-10 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-800 text-sm"
+                />
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">UF</label>
+              <select
+                name="uf"
+                value={formData.uf}
+                onChange={handleChange}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-slate-800 appearance-none text-center text-sm"
+              >
+                {BRAZIL_STATES.map(s => <option key={s.uf} value={s.uf}>{s.uf}</option>)}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -192,7 +211,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
                 name="transmission"
                 value={formData.transmission}
                 onChange={handleChange}
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-bold"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-bold text-sm"
               >
                 <option>Automático</option>
                 <option>Manual</option>
@@ -211,7 +230,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
                 name="fuel"
                 value={formData.fuel}
                 onChange={handleChange}
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-bold"
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-bold text-sm"
               >
                 <option>Flex</option>
                 <option>Gasolina</option>
@@ -246,7 +265,6 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           </div>
         </div>
 
-       
         <button
           type="submit"
           disabled={isLoading}
@@ -257,27 +275,17 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           }`}
         >
           {isLoading ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              PROCESSANDO...
-            </>
+            <div className="flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <span>AVALIANDO...</span>
+            </div>
           ) : (
-            <>AVALIAR AGORA <ArrowRight className="w-4 h-4" /></>
+            <>AVALIAR EM {formData.city || formData.uf} <ArrowRight className="w-4 h-4" /></>
           )}
         </button>
-      
       </form>
     </div>
   );
 };
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-  </svg>
-);
 
 export default VehicleForm;
