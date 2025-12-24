@@ -50,7 +50,14 @@ const App: React.FC = () => {
 
       if (currentUser) {
         setUser(currentUser);
-        setAppState(seoRoute || AppState.FORM);
+        // Só altera o estado se estiver na inicialização ou no login, 
+        // evitando interromper resultados ou loadings ativos.
+        setAppState(prev => {
+          if (prev === AppState.LOADING || prev === AppState.LOGIN) {
+            return seoRoute || AppState.FORM;
+          }
+          return prev;
+        });
       } else {
         setUser(null);
         setAppState(seoRoute || AppState.LOGIN);
@@ -65,6 +72,7 @@ const App: React.FC = () => {
   }, [checkSeoRoutes]);
 
   useEffect(() => {
+    // Timeout de segurança apenas para a carga inicial
     const safetyTimeout = setTimeout(() => {
       if (appState === AppState.LOADING && isInitializing.current) {
         const seoRoute = checkSeoRoutes();
@@ -93,7 +101,8 @@ const App: React.FC = () => {
       clearTimeout(safetyTimeout);
       if (subscription) subscription.unsubscribe();
     };
-  }, [syncUserSession, checkSeoRoutes, appState]);
+    // REMOVIDO appState das dependências para evitar resets durante processamento
+  }, [syncUserSession, checkSeoRoutes]);
 
   const handleLogin = async (uf: string) => {
     setError(null);
