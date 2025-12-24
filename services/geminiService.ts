@@ -87,7 +87,7 @@ function parseGeminiResponse(response: any): AnalysisResponse {
   
   const result: AnalysisResponse = {
     priceAnalysis: sections[1]?.trim() || text,
-    salesScripts: sections[2]?.trim().split('\n').filter(s => s.length > 5).map((s: string) => s.replace(/^[-*•"']\s*/, '').replace(/["']$/, '')) || [],
+    salesScripts: sections[2]?.trim().split('\n').filter((s: string | any[]) => s.length > 5).map((s: string) => s.replace(/^[-*•"']\s*/, '').replace(/["']$/, '')) || [],
     knowledgePill: sections[3]?.trim() || "",
     crmData: { resumo_veiculo: "", faixa_preco_sugerida: "", nivel_dificuldade_venda: "", tags_sugeridas: [] }
   };
