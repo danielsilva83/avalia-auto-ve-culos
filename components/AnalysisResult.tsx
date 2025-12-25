@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { AnalysisResponse, VehicleFormData, ToolType } from '../types';
-import { 
-  Share2, ArrowLeft, ExternalLink, LayoutGrid, FileText, 
-  Megaphone, TrendingUp, TrendingDown, ShieldAlert, Calculator, X, 
+import {
+  Share2, ArrowLeft, ExternalLink, LayoutGrid, FileText,
+  Megaphone, TrendingUp, TrendingDown, ShieldAlert, Calculator, X,
   ChevronRight, Printer, CheckCircle2, DollarSign, Target,
   Zap, Copy, Check, Settings2, Car, ShieldCheck, AlertTriangle,
   Lightbulb, MessageSquare, Tag, Bell, BellRing, Loader2
@@ -28,7 +28,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   const [alertActive, setAlertActive] = useState(false);
   const [isAlertLoading, setIsAlertLoading] = useState(false);
 
-  const AFFILIATE_LINK = "https://anycar.com.br/?ind=lwiVZxBshn"; 
+  const AFFILIATE_LINK = "https://anycar.com.br/?ind=lwiVZxBshn";
 
   const handleCreateAlert = async () => {
     setIsAlertLoading(true);
@@ -74,6 +74,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     const text = `*AvalIA AI - Inteligência Automotiva (${vehicleData.uf})*\n\n` +
       `🚗 *Veículo:* ${vehicleData.brandModel} ${vehicleData.year}\n` +
       `💰 *Sugestão de Preço:* ${data.crmData.faixa_preco_sugerida}\n` +
+      `📍 *Município:* ${vehicleData.municipio || 'Não informado'}\n` +
       `📉 *Liquidez:* ${data.crmData.nivel_dificuldade_venda}\n\n` +
       `_Gerado por: avaliaaiautomoveis.com_`;
     return encodeURIComponent(text);
@@ -90,7 +91,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
     };
 
     return (
-      
+
       <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-fade-in">
         <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10">
           <button onClick={() => setActiveTool(null)} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
@@ -109,10 +110,10 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
 
         <div className="flex-1 overflow-y-auto p-6 pb-32">
           {isToolLoading ? (
-             <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                <Loader2 className="w-12 h-12 text-slate-900 animate-spin" />
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Gerando Inteligência...</p>
-             </div>
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+              <Loader2 className="w-12 h-12 text-slate-900 animate-spin" />
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Gerando Inteligência...</p>
+            </div>
           ) : (
             <div className="animate-fade-in-up">
               {activeTool === 'profit' ? (
@@ -121,30 +122,30 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
                 <div className={`prose prose-slate max-w-none ${activeTool === 'dossier' ? 'bg-slate-900 text-white p-8 rounded-3xl shadow-2xl border-4 border-slate-800' : 'bg-gray-50 p-6 rounded-2xl border border-slate-100'}`}>
                   {activeTool === 'dossier' && (
                     <div className="mb-8 text-center border-b border-white/10 pb-8">
-                       <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-                          <Car className="w-10 h-10 text-white" />
-                       </div>
-                       <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic">Laudo de Avaliação</h1>
-                       <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
-                       <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold">
-                          <div className="bg-white/5 p-2 rounded uppercase">{vehicleData.brandModel}</div>
-                          <div className="bg-white/5 p-2 rounded uppercase">Ano {vehicleData.year}</div>
-                       </div>
+                      <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+                        <Car className="w-10 h-10 text-white" />
+                      </div>
+                      <h1 className="text-3xl font-black uppercase text-white m-0 tracking-tighter italic">Laudo de Avaliação</h1>
+                      <p className="text-blue-400 font-mono text-[10px] m-0 mt-2 uppercase tracking-widest">Certificado Regional AvalIA AI - {vehicleData.uf}</p>
+                      <div className="mt-6 grid grid-cols-2 gap-2 text-[10px] font-bold">
+                        <div className="bg-white/5 p-2 rounded uppercase">{vehicleData.brandModel}</div>
+                        <div className="bg-white/5 p-2 rounded uppercase">Ano {vehicleData.year}</div>
+                      </div>
                     </div>
                   )}
                   <div className={`whitespace-pre-wrap text-sm leading-relaxed ${activeTool === 'dossier' ? 'text-slate-300' : 'text-slate-700'}`}>
                     {toolContent}
                   </div>
-                 {activeTool === 'dossier' && (
-                 
+                  {activeTool === 'dossier' && (
+
                     <div className="mt-12 pt-8 border-t border-white/10 flex flex-col gap-4">
                       <button onClick={() => window.print()} className="w-full py-4 bg-white text-slate-900 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors shadow-lg">
-                         <Printer className="w-5 h-5" /> IMPRIMIR / SALVAR PDF
+                        <Printer className="w-5 h-5" /> IMPRIMIR / SALVAR PDF
                       </button>
                       <p className="text-center text-[9px] text-slate-500 uppercase font-black">Este documento não substitui vistoria cautelar física.</p>
                     </div>
-                    )}
-                  
+                  )}
+
                 </div>
               )}
             </div>
@@ -157,7 +158,8 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
   return (
     <div className="w-full max-w-md mx-auto space-y-6 pb-32 animate-fade-in">
       <ToolOverlay />
-<style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
   @media print {
     /* Remove scrollbars e fixa altura para impressão */
     .fixed, .overflow-y-auto { 
@@ -192,15 +194,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
           </button>
           <h2 className="text-xl font-bold text-slate-800">Resultado: {vehicleData.brandModel}</h2>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleCreateAlert}
           disabled={alertActive || isAlertLoading}
-          className={`p-3 rounded-2xl transition-all border flex items-center gap-2 ${
-            alertActive 
-            ? 'bg-blue-600 text-white border-blue-600' 
-            : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
-          }`}
+          className={`p-3 rounded-2xl transition-all border flex items-center gap-2 ${alertActive
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
+            }`}
           title={alertActive ? "Alerta Configurado" : "Monitorar Preço"}
         >
           {isAlertLoading ? (
@@ -219,27 +220,27 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
       {/* Cards de Preço e Liquidez */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-slate-900 p-5 rounded-2xl text-white shadow-xl shadow-slate-900/10">
-           <p className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1">Preço Sugerido</p>
-           <p className="text-xl font-black tracking-tighter">{data.crmData.faixa_preco_sugerida}</p>
+          <p className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1">Preço Sugerido{vehicleData.municipio ? ` (${vehicleData.municipio})` : ''}</p>
+          <p className="text-xl font-black tracking-tighter">{data.crmData.faixa_preco_sugerida}</p>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Liquidez em {vehicleData.uf}</p>
-           <p className="text-xl font-black text-slate-900 tracking-tighter">{data.crmData.nivel_dificuldade_venda}</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Liquidez em {vehicleData.uf}</p>
+          <p className="text-xl font-black text-slate-900 tracking-tighter">{data.crmData.nivel_dificuldade_venda}</p>
         </div>
       </div>
 
       {/* Análise Principal */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-b border-slate-100">
-           <div className="flex items-center gap-2">
-             <Target className="w-4 h-4 text-blue-600" />
-             <h3 className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Análise de Mercado</h3>
-           </div>
-           <span className="text-[9px] font-black text-slate-400 bg-white px-2 py-1 rounded border uppercase">{vehicleData.uf}</span>
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-blue-600" />
+            <h3 className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Análise de Mercado</h3>
+          </div>
+          <span className="text-[9px] font-black text-slate-400 bg-white px-2 py-1 rounded border uppercase">{vehicleData.uf}</span>
         </div>
         <div className="p-6 text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
           {data.priceAnalysis}
-          
+
           {data.groundingUrls && data.groundingUrls.length > 0 && (
             <div className="mt-8 pt-6 border-t border-slate-50">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Fontes Verificadas (Tempo Real):</p>
@@ -277,16 +278,16 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
             <p className="text-xs text-slate-500">Evite prejuízos com carros de leilão, sinistro ou bloqueio judicial.</p>
           </div>
         </div>
-        
+
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
             <AlertTriangle className="w-3 h-3 text-amber-500" />
             <span>3 em cada 10 veículos possuem histórico de leilão.</span>
           </div>
-          
-          <a 
-            href={AFFILIATE_LINK} 
-            target="_blank" 
+
+          <a
+            href={AFFILIATE_LINK}
+            target="_blank"
             rel="noopener noreferrer"
             className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 uppercase text-xs"
           >
@@ -341,60 +342,60 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
 
       {showMenu && (
         <div className="fixed inset-0 z-[70] flex items-end p-4 animate-fade-in">
-           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMenu(false)}></div>
-           <div className="relative w-full bg-white rounded-3xl overflow-hidden animate-fade-in-up shadow-2xl">
-              <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-500 fill-current" />
-                  <h4 className="font-black text-slate-900 uppercase tracking-tighter">Hub Estratégico PRO</h4>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMenu(false)}></div>
+          <div className="relative w-full bg-white rounded-3xl overflow-hidden animate-fade-in-up shadow-2xl">
+            <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-yellow-500 fill-current" />
+                <h4 className="font-black text-slate-900 uppercase tracking-tighter">Hub Estratégico PRO</h4>
+              </div>
+              <button onClick={() => setShowMenu(false)} className="p-2 bg-white border border-slate-200 rounded-full shadow-sm">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-3 grid gap-2 max-h-[70vh] overflow-y-auto">
+              <button onClick={() => openTool('profit')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-all text-left group border border-transparent hover:border-green-100">
+                <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition-transform"><Calculator className="w-6 h-6" /></div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">Lucro na Veia</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black">Calculadora de ROI</p>
                 </div>
-                <button onClick={() => setShowMenu(false)} className="p-2 bg-white border border-slate-200 rounded-full shadow-sm">
-                  <X className="w-4 h-4 text-slate-400" />
-                </button>
-              </div>
-              <div className="p-3 grid gap-2 max-h-[70vh] overflow-y-auto">
-                 <button onClick={() => openTool('profit')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-green-50 transition-all text-left group border border-transparent hover:border-green-100">
-                  <div className="p-3 bg-green-100 text-green-600 rounded-xl group-hover:scale-110 transition-transform"><Calculator className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Lucro na Veia</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Calculadora de ROI</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
-                <button onClick={() => openTool('dossier')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-all text-left group border border-transparent hover:border-blue-100">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"><FileText className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Dossiê de Venda</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Laudo Visual Certificado</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
-                <button onClick={() => openTool('ads')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-orange-50 transition-all text-left group border border-transparent hover:border-orange-100">
-                  <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:scale-110 transition-transform"><Megaphone className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Anúncio Turbo</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Copy de Alta Conversão</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
-                <button onClick={() => openTool('future')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-purple-50 transition-all text-left group border border-transparent hover:border-purple-100">
-                  <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition-transform"><TrendingDown className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Visão de Futuro</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Projeção 24 Meses</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
-                <button onClick={() => openTool('negotiation')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-red-50 transition-all text-left group border border-transparent hover:border-red-100">
-                  <div className="p-3 bg-red-100 text-red-600 rounded-xl group-hover:scale-110 transition-transform"><ShieldAlert className="w-6 h-6" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900">Battle Cards</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-black">Scripts de Negociação</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300" />
-                </button>
-              </div>
-           </div>
+                <ChevronRight className="w-5 h-5 text-slate-300" />
+              </button>
+              <button onClick={() => openTool('dossier')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-all text-left group border border-transparent hover:border-blue-100">
+                <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:scale-110 transition-transform"><FileText className="w-6 h-6" /></div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">Dossiê de Venda</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black">Laudo Visual Certificado</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300" />
+              </button>
+              <button onClick={() => openTool('ads')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-orange-50 transition-all text-left group border border-transparent hover:border-orange-100">
+                <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:scale-110 transition-transform"><Megaphone className="w-6 h-6" /></div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">Anúncio Turbo</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black">Copy de Alta Conversão</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300" />
+              </button>
+              <button onClick={() => openTool('future')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-purple-50 transition-all text-left group border border-transparent hover:border-purple-100">
+                <div className="p-3 bg-purple-100 text-purple-600 rounded-xl group-hover:scale-110 transition-transform"><TrendingDown className="w-6 h-6" /></div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">Visão de Futuro</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black">Projeção 24 Meses</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300" />
+              </button>
+              <button onClick={() => openTool('negotiation')} className="w-full p-4 flex items-center gap-4 bg-slate-50 rounded-2xl hover:bg-red-50 transition-all text-left group border border-transparent hover:border-red-100">
+                <div className="p-3 bg-red-100 text-red-600 rounded-xl group-hover:scale-110 transition-transform"><ShieldAlert className="w-6 h-6" /></div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">Battle Cards</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-black">Scripts de Negociação</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-300" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
