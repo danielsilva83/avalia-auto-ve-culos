@@ -1,31 +1,58 @@
-
 import React, { useState, useEffect } from 'react';
 import { VehicleFormData } from '../types';
-import { 
-  Car, Calendar, Gauge, Fuel, DollarSign, 
-  Settings2, Tag, ShieldCheck, CheckCircle2,
-  Disc, Sun, Radio, Armchair, MapPin
+import {
+  Car,
+  Calendar,
+  Gauge,
+  Fuel,
+  DollarSign,
+  Settings2,
+  Tag,
+  Disc,
+  Sun,
+  Radio,
+  Armchair,
+  MapPin,
 } from 'lucide-react';
 
 interface VehicleFormProps {
   onSubmit: (data: VehicleFormData) => void;
   isLoading: boolean;
   defaultUf?: string;
+  municipio?: string;
 }
 
 const BRAZIL_STATES = [
-  { uf: 'AC', name: 'Acre' }, { uf: 'AL', name: 'Alagoas' }, { uf: 'AP', name: 'Amapá' },
-  { uf: 'AM', name: 'Amazonas' }, { uf: 'BA', name: 'Bahia' }, { uf: 'CE', name: 'Ceará' },
-  { uf: 'DF', name: 'Distrito Federal' }, { uf: 'ES', name: 'Espírito Santo' }, { uf: 'GO', name: 'Goiás' },
-  { uf: 'MA', name: 'Maranhão' }, { uf: 'MT', name: 'Mato Grosso' }, { uf: 'MS', name: 'Mato Grosso do Sul' },
-  { uf: 'MG', name: 'Minas Gerais' }, { uf: 'PA', name: 'Pará' }, { uf: 'PB', name: 'Paraíba' },
-  { uf: 'PR', name: 'Paraná' }, { uf: 'PE', name: 'Pernambuco' }, { uf: 'PI', name: 'Piauí' },
-  { uf: 'RJ', name: 'Rio de Janeiro' }, { uf: 'RN', name: 'Rio Grande do Norte' }, { uf: 'RS', name: 'Rio Grande do Sul' },
-  { uf: 'RO', name: 'Rondônia' }, { uf: 'RR', name: 'Roraima' }, { uf: 'SC', name: 'Santa Catarina' },
-  { uf: 'SP', name: 'São Paulo' }, { uf: 'SE', name: 'Sergipe' }, { uf: 'TO', name: 'Tocantins' }
+  { uf: 'AC', name: 'Acre' },
+  { uf: 'AL', name: 'Alagoas' },
+  { uf: 'AP', name: 'Amapá' },
+  { uf: 'AM', name: 'Amazonas' },
+  { uf: 'BA', name: 'Bahia' },
+  { uf: 'CE', name: 'Ceará' },
+  { uf: 'DF', name: 'Distrito Federal' },
+  { uf: 'ES', name: 'Espírito Santo' },
+  { uf: 'GO', name: 'Goiás' },
+  { uf: 'MA', name: 'Maranhão' },
+  { uf: 'MT', name: 'Mato Grosso' },
+  { uf: 'MS', name: 'Mato Grosso do Sul' },
+  { uf: 'MG', name: 'Minas Gerais' },
+  { uf: 'PA', name: 'Pará' },
+  { uf: 'PB', name: 'Paraíba' },
+  { uf: 'PR', name: 'Paraná' },
+  { uf: 'PE', name: 'Pernambuco' },
+  { uf: 'PI', name: 'Piauí' },
+  { uf: 'RJ', name: 'Rio de Janeiro' },
+  { uf: 'RN', name: 'Rio Grande do Norte' },
+  { uf: 'RS', name: 'Rio Grande do Sul' },
+  { uf: 'RO', name: 'Rondônia' },
+  { uf: 'RR', name: 'Roraima' },
+  { uf: 'SC', name: 'Santa Catarina' },
+  { uf: 'SP', name: 'São Paulo' },
+  { uf: 'SE', name: 'Sergipe' },
+  { uf: 'TO', name: 'Tocantins' },
 ];
 
-const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultUf }) => {
+const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultUf, municipio: defaultMunicipio }) => {
   const [formData, setFormData] = useState<VehicleFormData>({
     transactionType: 'venda',
     type: 'Carro',
@@ -38,32 +65,48 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
     condition: 'Bom',
     price: 0,
     uf: defaultUf || 'SP',
+    municipio: defaultMunicipio || '',
     isArmored: false,
     hasLeather: false,
     hasSunroof: false,
     hasMultimedia: false,
     hasServiceHistory: false,
-    singleOwner: false
+    singleOwner: false,
   });
 
+  const [municipios, setMunicipios] = useState<string[]>([]);
+
+  // Initialize defaults when props change
   useEffect(() => {
     if (defaultUf) {
       setFormData(prev => ({ ...prev, uf: defaultUf }));
     }
-  }, [defaultUf]);
+    if (defaultMunicipio) {
+      setFormData(prev => ({ ...prev, municipio: defaultMunicipio }));
+    }
+  }, [defaultUf, defaultMunicipio]);
+
+  // Fetch municipalities for selected UF
+  useEffect(() => {
+    if (!formData.uf) {
+      setMunicipios([]);
+      return;
+    }
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${formData.uf}/municipios`)
+      .then(res => res.json())
+      .then((data: any[]) => setMunicipios(data.map(m => m.nome)))
+      .catch(err => console.error('Failed to fetch municipios:', err));
+  }, [formData.uf]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: name === 'year' || name === 'mileage' || name === 'price' 
-          ? Number(value) 
-          : value,
+        [name]: name === 'year' || name === 'mileage' || name === 'price' ? Number(value) : value,
       }));
     }
   };
@@ -85,40 +128,35 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           <Car className="w-7 h-7 text-blue-400" />
           NOVA AVALIAÇÃO
         </h2>
-        <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">Base de Dados Regional: {formData.uf}</p>
+        <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">
+          Base de Dados Regional: {formData.uf}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="p-8 space-y-6">
-        
         {/* Transaction Type Toggle */}
         <div className="flex bg-gray-100 p-1.5 rounded-2xl">
           <button
             type="button"
             onClick={() => setTransactionType('venda')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
-              formData.transactionType === 'venda' 
-                ? 'bg-white text-slate-900 shadow-sm' 
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${formData.transactionType === 'venda' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+              }`}
           >
             <Tag className="w-4 h-4" /> Vender
           </button>
           <button
             type="button"
             onClick={() => setTransactionType('compra')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
-              formData.transactionType === 'compra' 
-                ? 'bg-white text-slate-900 shadow-sm' 
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${formData.transactionType === 'compra' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+              }`}
           >
             <DollarSign className="w-4 h-4" /> Comprar
           </button>
         </div>
 
-        {/* Modelo e UF */}
+        {/* Modelo, UF e Município */}
         <div className="grid grid-cols-4 gap-4">
-          <div className="col-span-3">
+          <div className="col-span-2">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Marca e Modelo</label>
             <div className="relative">
               <input
@@ -133,7 +171,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
               <Car className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
           </div>
-          <div>
+          <div className="col-span-1">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">UF</label>
             <select
               name="uf"
@@ -141,7 +179,27 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
               onChange={handleChange}
               className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-slate-800 appearance-none text-center"
             >
-              {BRAZIL_STATES.map(s => <option key={s.uf} value={s.uf}>{s.uf}</option>)}
+              {BRAZIL_STATES.map(s => (
+                <option key={s.uf} value={s.uf}>
+                  {s.uf}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-1">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Município</label>
+            <select
+              name="municipio"
+              value={formData.municipio}
+              onChange={handleChange}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none font-black text-slate-800 appearance-none"
+            >
+              <option value="">Selecione</option>
+              {municipios.map(m => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -164,7 +222,6 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             </div>
           </div>
-
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Quilometragem</label>
             <div className="relative">
@@ -185,7 +242,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
 
         {/* Grid Transmissão e Combustível */}
         <div className="grid grid-cols-2 gap-4">
-           <div>
+          <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Câmbio</label>
             <div className="relative">
               <select
@@ -246,21 +303,17 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
           </div>
         </div>
 
-       
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full py-5 rounded-2xl font-black text-white shadow-xl transition-all transform active:scale-[0.98] uppercase tracking-widest text-xs flex items-center justify-center gap-3 ${
-            isLoading 
-              ? 'bg-slate-400 cursor-not-allowed' 
-              : 'bg-slate-900 hover:bg-black hover:shadow-slate-200'
-          }`}
+          className={`w-full py-5 rounded-2xl font-black text-white shadow-xl transition-all transform active:scale-[0.98] uppercase tracking-widest text-xs flex items-center justify-center gap-3 ${isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-black hover:shadow-slate-200'
+            }`}
         >
           {isLoading ? (
             <>
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
               PROCESSANDO...
             </>
@@ -268,7 +321,6 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ onSubmit, isLoading, defaultU
             <>AVALIAR AGORA <ArrowRight className="w-4 h-4" /></>
           )}
         </button>
-      
       </form>
     </div>
   );

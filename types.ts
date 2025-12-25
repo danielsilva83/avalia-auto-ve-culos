@@ -9,6 +9,7 @@ export interface VehicleFormData {
   condition: string;
   price: number;
   uf: string;
+  municipio: string;
   fuel: string;
   color: string;
   isArmored: boolean;
