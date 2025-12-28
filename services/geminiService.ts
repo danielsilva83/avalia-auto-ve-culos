@@ -37,9 +37,9 @@ const parseResponse = (text: string): AnalysisResponse => {
       const start = jsonText.indexOf('{');
       const end = jsonText.lastIndexOf('}');
       if (start !== -1 && end !== -1) {
-         try {
-            result.crmData = JSON.parse(jsonText.substring(start, end + 1));
-         } catch (e) { console.error("JSON parse error", e); }
+        try {
+          result.crmData = JSON.parse(jsonText.substring(start, end + 1));
+        } catch (e) { console.error("JSON parse error", e); }
       }
     }
   } catch (error) { console.error("Error parsing response:", error); }
@@ -49,7 +49,7 @@ const parseResponse = (text: string): AnalysisResponse => {
 export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisResponse> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const transactionContext = data.transactionType === 'compra' ? 'COMPRA' : 'VENDA';
-  
+
   const amenities = [
     data.transmission, data.fuel,
     data.isArmored ? 'Blindado' : null,
@@ -61,18 +61,18 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
   ].filter(Boolean).join(', ');
 
   const prompt = `
-    Analise o veículo para **${transactionContext}** no estado de **${data.uf}**:
+    Analise o veículo para **${transactionContext}** no estado de **${data.uf}** no município de **${data.municipio}**:
     - Modelo: ${data.brandModel} | Ano: ${data.year} | KM: ${data.mileage}
     - Diferenciais: ${amenities}
     - Preço Base Informado: R$ ${data.price.toLocaleString('pt-BR')}
 
-    USE GOOGLE SEARCH para encontrar a Tabela FIPE atualizada e anúncios reais em ${data.uf}.
-    FOCO REGIONAL: Justifique o preço baseado na demanda e liquidez específica do estado de ${data.uf}.
+    USE GOOGLE SEARCH para encontrar a Tabela FIPE atualizada e anúncios reais em ${data.uf} no município de ${data.municipio}.
+    FOCO REGIONAL: Justifique o preço baseado na demanda e liquidez específica do estado de ${data.uf} no município de ${data.municipio}.
   `;
 
   const systemInstruction = `
     Você é o 'AvalIA AI Automóveis', o consultor mais preciso do Brasil.
-    [[SEÇÃO 1]] Análise Detalhada de Preço e Mercado Regional em ${data.uf}.
+    [[SEÇÃO 1]] Análise Detalhada de Preço e Mercado Regional em ${data.uf} - ${data.municipio}.
     [[SEÇÃO 2]] Scripts Rápidos de Negociação.
     [[SEÇÃO 3]] Uma pílula de conhecimento sobre este modelo específico.
     [[SEÇÃO 4]] JSON estritamente formatado: { "resumo_veiculo": "...", "faixa_preco_sugerida": "R$ X a R$ Y", "nivel_dificuldade_venda": "Fácil/Médio/Difícil", "tags_sugeridas": ["tag1", "tag2"] }
@@ -80,12 +80,12 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", 
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         systemInstruction: systemInstruction,
         tools: [{ googleSearch: {} }],
-        temperature: 0.7, 
+        temperature: 0.7,
       },
     });
 
@@ -100,12 +100,12 @@ export const analyzeVehicle = async (data: VehicleFormData): Promise<AnalysisRes
 
 export const generateToolContent = async (type: ToolType, data: VehicleFormData): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+
   const toolPrompts: Record<string, string> = {
-    ads: `Gere 3 anúncios de alta conversão (um Formal, um Emocional e um Urgente) para o veículo ${data.brandModel} ${data.year} em ${data.uf}. Destaque os opcionais informados e use emojis.`,
-    future: `Com base no mercado automotivo de ${data.uf}, projete a desvalorização do ${data.brandModel} ${data.year} para os próximos 6, 12 e 24 meses. Explique os motivos técnicos e de mercado.`,
+    ads: `Gere 3 anúncios de alta conversão (um Formal, um Emocional e um Urgente) para o veículo ${data.brandModel} ${data.year} em ${data.uf} no município de ${data.municipio}. Destaque os opcionais informados e use emojis.`,
+    future: `Com base no mercado automotivo de ${data.uf} no município de ${data.municipio}, projete a desvalorização do ${data.brandModel} ${data.year} para os próximos 6, 12 e 24 meses. Explique os motivos técnicos e de mercado.`,
     negotiation: `Crie 5 'Battle Cards' para quem está negociando um ${data.brandModel}. Para cada card, apresente uma objeção comum e a resposta técnica matadora para defender o preço.`,
-    dossier: `Crie um Dossiê de Venda Executivo para o ${data.brandModel} ${data.year}. Destaque por que este veículo é uma oportunidade superior considerando seus diferenciais e o mercado local de ${data.uf}.`
+    dossier: `Crie um Dossiê de Venda Executivo para o ${data.brandModel} ${data.year}. Destaque por que este veículo é uma oportunidade superior considerando seus diferenciais e o mercado local de ${data.uf} no município de ${data.municipio}.`
   };
 
   try {
