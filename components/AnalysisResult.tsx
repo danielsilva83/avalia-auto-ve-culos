@@ -199,8 +199,8 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
           onClick={handleCreateAlert}
           disabled={alertActive || isAlertLoading}
           className={`p-3 rounded-2xl transition-all border flex items-center gap-2 ${alertActive
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
             }`}
           title={alertActive ? "Alerta Configurado" : "Monitorar Preço"}
         >
@@ -236,7 +236,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ data, vehicleData, onRe
             <Target className="w-4 h-4 text-blue-600" />
             <h3 className="font-black text-slate-900 uppercase text-[10px] tracking-widest">Análise de Mercado</h3>
           </div>
-          <span className="text-[9px] font-black text-slate-400 bg-white px-2 py-1 rounded border uppercase">{vehicleData.uf}</span>
+          <span className="text-[9px] font-black text-slate-400 bg-white px-2 py-1 rounded border uppercase">{vehicleData.uf}{vehicleData.municipio ? ` - ${vehicleData.municipio}` : ''}</span>
         </div>
         <div className="p-6 text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
           {data.priceAnalysis}
